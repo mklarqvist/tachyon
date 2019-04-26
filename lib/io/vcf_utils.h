@@ -39,8 +39,8 @@ public:
 	VcfHeader(const VcfHeader& other);
 	~VcfHeader() = default;
 
-	inline size_t GetNumberSamples(void) const{ return(this->samples_.size()); }
-	inline size_t GetNumberContigs(void) const{ return(this->contigs_.size()); }
+	inline size_t GetNumberSamples(void) const { return(this->samples_.size()); }
+	inline size_t GetNumberContigs(void) const { return(this->contigs_.size()); }
 
 	// Adds Contig information from the idPair to the ContigInfo object.
 	void AddContigInfo(const bcf_idpair_t& idPair);
@@ -91,7 +91,7 @@ public:
 	hts_vcf_header* ConvertVcfHeader(void);
 
 	// Append a string to the literal string
-	inline void AppendLiteralString(const std::string& literal_addition){ this->literals_ += literal_addition; }
+	inline void AppendLiteralString(const std::string& literal_addition) { this->literals_ += literal_addition; }
 
 public:
 	// VCF file version string.

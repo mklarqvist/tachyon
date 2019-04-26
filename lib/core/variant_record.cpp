@@ -6,16 +6,16 @@ namespace tachyon{
 /****************************
 *  Allele description
 ****************************/
-yon_allele::yon_allele() : l_allele(0), allele(nullptr){}
-yon_allele::yon_allele(const std::string& string) : l_allele(string.size()), allele(new char[l_allele]){ memcpy(allele, string.data(), l_allele); }
-yon_allele& yon_allele::operator=(const std::string& value){ delete [] allele; l_allele = value.size(); allele = new char[l_allele]; memcpy(allele, value.data(), l_allele); return(*this); }
-yon_allele& yon_allele::operator=(const char* value){ delete [] allele; l_allele = strlen(value); allele = new char[l_allele]; memcpy(allele, value, l_allele); return(*this); }
-yon_allele& yon_allele::operator=(const char& value){ delete [] allele; l_allele = 1; allele = new char[l_allele]; allele[0] = value; return(*this); }
+yon_allele::yon_allele() : l_allele(0), allele(nullptr) {}
+yon_allele::yon_allele(const std::string& string) : l_allele(string.size()), allele(new char[l_allele]) { memcpy(allele, string.data(), l_allele); }
+yon_allele& yon_allele::operator=(const std::string& value) { delete [] allele; l_allele = value.size(); allele = new char[l_allele]; memcpy(allele, value.data(), l_allele); return(*this); }
+yon_allele& yon_allele::operator=(const char* value) { delete [] allele; l_allele = strlen(value); allele = new char[l_allele]; memcpy(allele, value, l_allele); return(*this); }
+yon_allele& yon_allele::operator=(const char& value) { delete [] allele; l_allele = 1; allele = new char[l_allele]; allele[0] = value; return(*this); }
 
-yon_allele::yon_allele(const yon_allele& other) : l_allele(other.l_allele), allele(new char[l_allele]){ memcpy(allele, other.allele, l_allele); }
-yon_allele::yon_allele(yon_allele&& other) noexcept : l_allele(other.l_allele), allele(nullptr){ std::swap(allele, other.allele); other.l_allele = 0; }
+yon_allele::yon_allele(const yon_allele& other) : l_allele(other.l_allele), allele(new char[l_allele]) { memcpy(allele, other.allele, l_allele); }
+yon_allele::yon_allele(yon_allele&& other) noexcept : l_allele(other.l_allele), allele(nullptr) { std::swap(allele, other.allele); other.l_allele = 0; }
 
-yon_allele& yon_allele::operator=(const yon_allele& other){
+yon_allele& yon_allele::operator=(const yon_allele& other) {
 	delete [] allele;
 	l_allele = other.l_allele;
 	allele = new char[l_allele];
@@ -24,7 +24,7 @@ yon_allele& yon_allele::operator=(const yon_allele& other){
 }
 
 yon_allele& yon_allele::operator=(yon_allele&& other) noexcept {
-	if(this == &other){
+	if (this == &other) {
 		// precautions against self-moves
 		return *this;
 	}
@@ -34,9 +34,9 @@ yon_allele& yon_allele::operator=(yon_allele&& other) noexcept {
 	return(*this);
 }
 
-yon_allele::~yon_allele(){ delete [] allele; }
+yon_allele::~yon_allele() { delete [] allele; }
 
-yon_allele& yon_allele::ParseFromBuffer(const char* const in){
+yon_allele& yon_allele::ParseFromBuffer(const char* const in) {
 	delete [] this->allele;
 	this->l_allele = *reinterpret_cast<const uint16_t* const>(in);
 	this->allele = new char[this->l_allele];
@@ -69,26 +69,26 @@ yon1_vnt_t::yon1_vnt_t(const yon1_vnt_t& other) :
 	gt(nullptr), gt_sum(nullptr), gt_sum_occ(nullptr),
 	info(nullptr), fmt(nullptr)
 {
-	if(n_info) info = new PrimitiveContainerInterface*[m_info];
-	if(n_fmt)  fmt  = new PrimitiveGroupContainerInterface*[m_fmt];
-	for(int i = 0; i < n_alleles; ++i) alleles[i] = other.alleles[i];
-	for(int i = 0; i < n_info; ++i) info[i] = other.info[i]->Clone();
-	for(int i = 0; i < n_fmt; ++i)  fmt[i]  = other.fmt[i]->Clone();
-	if(other.gt != nullptr) gt = new yon_gt(*other.gt);
-	if(other.gt_sum != nullptr) gt_sum = new yon_gt_summary(*other.gt_sum);
-	if(other.gt_sum_occ != nullptr){
+	if (n_info) info = new PrimitiveContainerInterface*[m_info];
+	if (n_fmt)  fmt  = new PrimitiveGroupContainerInterface*[m_fmt];
+	for (int i = 0; i < n_alleles; ++i) alleles[i] = other.alleles[i];
+	for (int i = 0; i < n_info; ++i) info[i] = other.info[i]->Clone();
+	for (int i = 0; i < n_fmt; ++i)  fmt[i]  = other.fmt[i]->Clone();
+	if (other.gt != nullptr) gt = new yon_gt(*other.gt);
+	if (other.gt_sum != nullptr) gt_sum = new yon_gt_summary(*other.gt_sum);
+	if (other.gt_sum_occ != nullptr) {
 		gt_sum_occ = new yon_gt_summary[gt->n_o];
-		for(int i = 0; i < gt->n_o; ++i) gt_sum_occ[i] = other.gt_sum_occ[i];
+		for (int i = 0; i < gt->n_o; ++i) gt_sum_occ[i] = other.gt_sum_occ[i];
 	}
 }
 
-yon1_vnt_t& yon1_vnt_t::operator=(const yon1_vnt_t& other){
+yon1_vnt_t& yon1_vnt_t::operator=(const yon1_vnt_t& other) {
 	// Delete existing data without consideration.
 	delete [] alleles;
 	delete gt; delete gt_sum;
 	delete [] gt_sum_occ;
-	for(int i = 0; i < n_info; ++i) delete info[i];
-	for(int i = 0; i < n_fmt;  ++i) delete fmt[i];
+	for (int i = 0; i < n_info; ++i) delete info[i];
+	for (int i = 0; i < n_fmt;  ++i) delete fmt[i];
 	delete [] info; delete [] fmt;
 
 	// Copy data.
@@ -104,16 +104,16 @@ yon1_vnt_t& yon1_vnt_t::operator=(const yon1_vnt_t& other){
 	gt = nullptr; gt_sum = nullptr; gt_sum_occ = nullptr,
 	info = nullptr; fmt = nullptr;
 
-	if(n_info) info = new PrimitiveContainerInterface*[m_info];
-	if(n_fmt)  fmt  = new PrimitiveGroupContainerInterface*[m_fmt];
-	for(int i = 0; i < n_alleles; ++i) alleles[i] = other.alleles[i];
-	for(int i = 0; i < n_info; ++i) info[i] = other.info[i]->Clone();
-	for(int i = 0; i < n_fmt; ++i)  fmt[i]  = other.fmt[i]->Clone();
-	if(other.gt != nullptr) gt = new yon_gt(*other.gt);
-	if(other.gt_sum != nullptr) gt_sum = new yon_gt_summary(*other.gt_sum);
-	if(other.gt_sum_occ != nullptr){
+	if (n_info) info = new PrimitiveContainerInterface*[m_info];
+	if (n_fmt)  fmt  = new PrimitiveGroupContainerInterface*[m_fmt];
+	for (int i = 0; i < n_alleles; ++i) alleles[i] = other.alleles[i];
+	for (int i = 0; i < n_info; ++i) info[i] = other.info[i]->Clone();
+	for (int i = 0; i < n_fmt; ++i)  fmt[i]  = other.fmt[i]->Clone();
+	if (other.gt != nullptr) gt = new yon_gt(*other.gt);
+	if (other.gt_sum != nullptr) gt_sum = new yon_gt_summary(*other.gt_sum);
+	if (other.gt_sum_occ != nullptr) {
 		gt_sum_occ = new yon_gt_summary[gt->n_o];
-		for(int i = 0; i < gt->n_o; ++i) gt_sum_occ[i] = other.gt_sum_occ[i];
+		for (int i = 0; i < gt->n_o; ++i) gt_sum_occ[i] = other.gt_sum_occ[i];
 	}
 
 	return(*this);
@@ -136,28 +136,28 @@ yon1_vnt_t::yon1_vnt_t(yon1_vnt_t&& other) noexcept :
 	std::swap(gt, other.gt);
 	std::swap(gt_sum, other.gt_sum);
 	std::swap(gt_sum_occ, other.gt_sum_occ);
-	if(n_info){
+	if (n_info) {
 		info = new PrimitiveContainerInterface*[n_info];
-		for(int i = 0; i < n_info; ++i) info[i] = other.info[i]->Move();
+		for (int i = 0; i < n_info; ++i) info[i] = other.info[i]->Move();
 	}
 
-	if(n_fmt){
+	if (n_fmt) {
 		fmt = new PrimitiveGroupContainerInterface*[n_fmt];
-		for(int i = 0; i < n_fmt; ++i) fmt[i] = other.fmt[i]->Move();
+		for (int i = 0; i < n_fmt; ++i) fmt[i] = other.fmt[i]->Move();
 	}
 }
 //yon1_vnt_t& operator=(yon1_vnt_t&& other) noexcept = delete; // temporarily deleted
 
-yon1_vnt_t::~yon1_vnt_t(){
+yon1_vnt_t::~yon1_vnt_t() {
 	delete [] alleles;
 	delete gt; delete gt_sum;
 	delete [] gt_sum_occ;
-	for(int i = 0; i < n_info; ++i) delete info[i];
-	for(int i = 0; i < n_fmt;  ++i) delete fmt[i];
+	for (int i = 0; i < n_info; ++i) delete info[i];
+	for (int i = 0; i < n_fmt;  ++i) delete fmt[i];
 	delete [] info; delete [] fmt;
 }
 
-bool yon1_vnt_t::UpdateBase(const bcf1_t* record){
+bool yon1_vnt_t::UpdateBase(const bcf1_t* record) {
 	n_alleles = record->n_allele;
 	qual = record->qual;
 	rid  = record->rid;
@@ -167,7 +167,7 @@ bool yon1_vnt_t::UpdateBase(const bcf1_t* record){
 	alleles = new yon_allele[n_alleles];
 
 	// Fix for the special case when ALT is not encoded
-	if(this->n_alleles == 1){
+	if (this->n_alleles == 1) {
 		delete [] alleles;
 		this->n_alleles = 2;
 		this->alleles = new yon_allele[n_alleles];
@@ -176,63 +176,63 @@ bool yon1_vnt_t::UpdateBase(const bcf1_t* record){
 		this->alleles[1].allele[0] = '.';
 		this->alleles[1].l_allele  = 1;
 	} else {
-		for(uint32_t i = 0; i < this->n_alleles; ++i){
+		for (uint32_t i = 0; i < this->n_alleles; ++i) {
 			this->alleles[i] = record->d.allele[i];
 		}
 	}
 
-	if(this->n_alleles == 2) this->controller.biallelic = true;
+	if (this->n_alleles == 2) this->controller.biallelic = true;
 	this->controller.simple_snv = (this->alleles[0].length() == 1 && this->alleles[1].length() == 1);
 
 	return true;
 }
 
-std::string yon1_vnt_t::GetAlleleString(void) const{
+std::string yon1_vnt_t::GetAlleleString(void) const {
 	std::string ret = this->alleles[0].ToString();
-	for(uint32_t i = 1; i < this->n_alleles; ++i)
+	for (uint32_t i = 1; i < this->n_alleles; ++i)
 		ret += "," + this->alleles[i].ToString();
 	return(ret);
 }
 
-bool yon1_vnt_t::EvaluateSummary(bool lazy_evaluate){
+bool yon1_vnt_t::EvaluateSummary(bool lazy_evaluate) {
 	assert(this->gt != nullptr);
 	assert(this->gt->rcds != nullptr);
 
-	if(this->gt_sum != nullptr)
+	if (this->gt_sum != nullptr)
 		return true;
 
 	this->gt_sum = new yon_gt_summary(this->gt->m, this->gt->n_allele);
 	*this->gt_sum += *this->gt;
-	if(lazy_evaluate) this->gt_sum->LazyEvaluate();
+	if (lazy_evaluate) this->gt_sum->LazyEvaluate();
 	return true;
 }
 
-bool yon1_vnt_t::EvaluateOccSummary(bool lazy_evaluate){
+bool yon1_vnt_t::EvaluateOccSummary(bool lazy_evaluate) {
 	assert(this->gt != nullptr);
 	assert(this->gt->rcds != nullptr);
 
-	if(this->gt_sum_occ != nullptr)
+	if (this->gt_sum_occ != nullptr)
 		return false;
 
-	if(this->gt->n_o == 0)
+	if (this->gt->n_o == 0)
 		return false;
 
 	this->gt_sum_occ = new yon_gt_summary[this->gt->n_o];
-	for(int i = 0; i < this->gt->n_o; ++i){
+	for (int i = 0; i < this->gt->n_o; ++i) {
 		this->gt_sum_occ[i].Setup(this->gt->m, this->gt->n_allele);
 		this->gt_sum_occ[i].Add(*this->gt, this->gt->n_i_occ[i], this->gt->d_occ[i]);
-		if(lazy_evaluate) this->gt_sum_occ[i].LazyEvaluate();
+		if (lazy_evaluate) this->gt_sum_occ[i].LazyEvaluate();
 	}
 
 	return true;
 }
 
 
-bool yon1_vnt_t::EvaluateOcc(yon_occ& occ){
-	if(occ.row_names.size() == 0)
+bool yon1_vnt_t::EvaluateOcc(yon_occ& occ) {
+	if (occ.row_names.size() == 0)
 		return false;
 
-	if(this->gt == nullptr)
+	if (this->gt == nullptr)
 		return false;
 
 	this->gt->n_o     = occ.occ.size();
@@ -244,23 +244,23 @@ bool yon1_vnt_t::EvaluateOcc(yon_occ& occ){
 	memset(cum_sums, 0, sizeof(uint32_t)*this->gt->n_o);
 	memset(cum_sums_hit, 0, sizeof(uint32_t)*this->gt->n_o);
 
-	for(uint32_t i = 0; i < this->gt->n_o; ++i){
+	for (uint32_t i = 0; i < this->gt->n_o; ++i) {
 		this->gt->d_occ[i]   = new yon_gt_rcd[std::min(this->gt->n_i, occ.cum_sums[i])];
 		this->gt->n_i_occ[i] = 0;
 	}
 
 	// Iterate over available gt rcds.
-	for(uint32_t j = 0; j < this->gt->n_i; ++j){
+	for (uint32_t j = 0; j < this->gt->n_i; ++j) {
 		// Iterate over available groupings in transposed occ.
-		for(uint32_t i = 0; i < this->gt->n_o; ++i){
+		for (uint32_t i = 0; i < this->gt->n_o; ++i) {
 			const uint32_t to   = occ.vocc[cum_sums[i] + this->gt->rcds[j].run_length][i];
 			const uint32_t from = occ.vocc[cum_sums[i]][i];
-			if(to - from != 0){
+			if (to - from != 0) {
 				// Allocate memory for alleles.
 				this->gt->d_occ[i][this->gt->n_i_occ[i]].allele = new uint8_t[this->gt->m];
 
 				// Copy allelic data from recerence gt rcd.
-				for(uint32_t k = 0; k < this->gt->m; ++k){
+				for (uint32_t k = 0; k < this->gt->m; ++k) {
 					this->gt->d_occ[i][this->gt->n_i_occ[i]].allele[k] = this->gt->rcds[j].allele[k];
 				}
 
@@ -274,7 +274,7 @@ bool yon1_vnt_t::EvaluateOcc(yon_occ& occ){
 		}
 	}
 	// Debug assertions.
-	for(int i = 0; i < this->gt->n_o; ++i){
+	for (int i = 0; i < this->gt->n_o; ++i) {
 		assert(cum_sums[i] == this->gt->n_s);
 		assert(cum_sums_hit[i] == occ.cum_sums[i]);
 	}
@@ -285,25 +285,25 @@ bool yon1_vnt_t::EvaluateOcc(yon_occ& occ){
 	return(true);
 }
 
-bool yon1_vnt_t::UsePackedRefAlt(void) const{
-	if(this->controller.biallelic == false || this->controller.diploid == false)
+bool yon1_vnt_t::UsePackedRefAlt(void) const {
+	if (this->controller.biallelic == false || this->controller.diploid == false)
 		return false;
 
-	if(std::regex_match(std::string(this->alleles[0].allele, this->alleles[0].l_allele), YON_REGEX_PACKED_ALLELES) &&
-	   std::regex_match(std::string(this->alleles[1].allele, this->alleles[1].l_allele), YON_REGEX_PACKED_ALLELES)){
+	if (std::regex_match(std::string(this->alleles[0].allele, this->alleles[0].l_allele), YON_REGEX_PACKED_ALLELES) &&
+	   std::regex_match(std::string(this->alleles[1].allele, this->alleles[1].l_allele), YON_REGEX_PACKED_ALLELES)) {
 		return true;
 	}
 	return false;
 }
 
-uint8_t yon1_vnt_t::PackRefAltByte(void) const{
+uint8_t yon1_vnt_t::PackRefAltByte(void) const {
 	assert(this->UsePackedRefAlt());
 	uint8_t ref_alt = 0; // start out with empty
 
-	if(this->alleles[0].l_allele == 9 && strncmp(this->alleles[0].allele, "<NON_REF>", 9) == 0){
+	if (this->alleles[0].l_allele == 9 && strncmp(this->alleles[0].allele, "<NON_REF>", 9) == 0) {
 		ref_alt ^= YON_ALLELE_NON_REF << 4;
 	} else {
-		switch(this->alleles[0].allele[0]){
+		switch(this->alleles[0].allele[0]) {
 		case 'A': ref_alt ^= YON_ALLELE_A << 4; break;
 		case 'T': ref_alt ^= YON_ALLELE_T << 4; break;
 		case 'G': ref_alt ^= YON_ALLELE_G << 4; break;
@@ -318,10 +318,10 @@ uint8_t yon1_vnt_t::PackRefAltByte(void) const{
 		}
 	}
 
-	if(this->alleles[1].l_allele == 9 && strncmp(this->alleles[1].allele, "<NON_REF>", 9) == 0){
+	if (this->alleles[1].l_allele == 9 && strncmp(this->alleles[1].allele, "<NON_REF>", 9) == 0) {
 		ref_alt ^= YON_ALLELE_NON_REF << 0;
 	} else {
-		switch(this->alleles[1].allele[0]){
+		switch(this->alleles[1].allele[0]) {
 		case 'A': ref_alt ^= YON_ALLELE_A << 0; break;
 		case 'T': ref_alt ^= YON_ALLELE_T << 0; break;
 		case 'G': ref_alt ^= YON_ALLELE_G << 0; break;
@@ -336,20 +336,20 @@ uint8_t yon1_vnt_t::PackRefAltByte(void) const{
 	return(ref_alt);
 }
 
-bcf1_t* yon1_vnt_t::UpdateHtslibVcfRecord(bcf1_t* rec, bcf_hdr_t* hdr) const{
+bcf1_t* yon1_vnt_t::UpdateHtslibVcfRecord(bcf1_t* rec, bcf_hdr_t* hdr) const {
 	rec->rid = this->rid;
 	rec->pos = this->pos;
 	bcf_update_id(hdr, rec, this->name.data());
 	bcf_update_alleles_str(hdr, rec, this->GetAlleleString().data());
-	if(std::isnan(this->qual)) bcf_float_set_missing(rec->qual);
+	if (std::isnan(this->qual)) bcf_float_set_missing(rec->qual);
 	else rec->qual = this->qual;
 
 	return(rec);
 }
 
-void yon1_vnt_t::OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr){
-	for(uint32_t j = 0; j < n_info; ++j){
-		if(info_hdr[j]->yon_type == YON_VCF_HEADER_FLAG){
+void yon1_vnt_t::OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr) {
+	for (uint32_t j = 0; j < n_info; ++j) {
+		if (info_hdr[j]->yon_type == YON_VCF_HEADER_FLAG) {
 			bcf_update_info_flag(hdr, rec, info_hdr[j]->id.data(), NULL, 1);
 		} else {
 			info[j]->UpdateHtslibVcfRecordInfo(rec, hdr, info_hdr[j]->id);
@@ -362,9 +362,9 @@ void yon1_vnt_t::OutputHtslibVcfFormat(bcf1_t* rec,
 						   const bool display_genotypes,
 						   yon_gt_rcd* external_exp) const
 {
-	if(n_fmt){
+	if (n_fmt) {
 		// Case when the only available FORMAT field is the GT field.
-		if(n_fmt == 1 && is_loaded_gt &&
+		if (n_fmt == 1 && is_loaded_gt &&
 		   controller.gt_available &&
 		   display_genotypes)
 		{
@@ -375,7 +375,7 @@ void yon1_vnt_t::OutputHtslibVcfFormat(bcf1_t* rec,
 		}
 		// Case when there are > 1 Vcf Format fields and the GT field
 		// is available.
-		else if(n_fmt > 1 && is_loaded_gt &&
+		else if (n_fmt > 1 && is_loaded_gt &&
 				controller.gt_available &&
 				display_genotypes)
 		{
@@ -383,24 +383,24 @@ void yon1_vnt_t::OutputHtslibVcfFormat(bcf1_t* rec,
 			gt->d_exp = external_exp;
 
 			gt->UpdateHtslibGenotypes(rec, hdr);
-			for(uint32_t g = 1; g < n_fmt; ++g){
-				if(fmt_hdr[g]->yon_type == YON_VCF_HEADER_FLOAT)
+			for (uint32_t g = 1; g < n_fmt; ++g) {
+				if (fmt_hdr[g]->yon_type == YON_VCF_HEADER_FLOAT)
 					fmt[g]->UpdateHtslibVcfRecordFormatFloat(rec, hdr, fmt_hdr[g]->id);
-				else if(fmt_hdr[g]->yon_type == YON_VCF_HEADER_INTEGER)
+				else if (fmt_hdr[g]->yon_type == YON_VCF_HEADER_INTEGER)
 					fmt[g]->UpdateHtslibVcfRecordFormatInt32(rec, hdr, fmt_hdr[g]->id);
-				else if(fmt_hdr[g]->yon_type == YON_VCF_HEADER_STRING || fmt_hdr[g]->yon_type == YON_VCF_HEADER_CHARACTER)
+				else if (fmt_hdr[g]->yon_type == YON_VCF_HEADER_STRING || fmt_hdr[g]->yon_type == YON_VCF_HEADER_CHARACTER)
 					fmt[g]->UpdateHtslibVcfRecordFormatString(rec, hdr, fmt_hdr[g]->id);
 			}
 			gt->d_exp = nullptr;
 		}
 		// All other cases.
 		else {
-			for(uint32_t g = 0; g < n_fmt; ++g){
-				if(fmt_hdr[g]->yon_type == YON_VCF_HEADER_FLOAT)
+			for (uint32_t g = 0; g < n_fmt; ++g) {
+				if (fmt_hdr[g]->yon_type == YON_VCF_HEADER_FLOAT)
 					fmt[g]->UpdateHtslibVcfRecordFormatFloat(rec, hdr, fmt_hdr[g]->id);
-				else if(fmt_hdr[g]->yon_type == YON_VCF_HEADER_INTEGER)
+				else if (fmt_hdr[g]->yon_type == YON_VCF_HEADER_INTEGER)
 					fmt[g]->UpdateHtslibVcfRecordFormatInt32(rec, hdr, fmt_hdr[g]->id);
-				else if(fmt_hdr[g]->yon_type == YON_VCF_HEADER_STRING || fmt_hdr[g]->yon_type == YON_VCF_HEADER_CHARACTER)
+				else if (fmt_hdr[g]->yon_type == YON_VCF_HEADER_STRING || fmt_hdr[g]->yon_type == YON_VCF_HEADER_CHARACTER)
 					fmt[g]->UpdateHtslibVcfRecordFormatString(rec, hdr, fmt_hdr[g]->id);
 			}
 		}
@@ -408,9 +408,9 @@ void yon1_vnt_t::OutputHtslibVcfFormat(bcf1_t* rec,
 	}
 }
 
-void yon1_vnt_t::OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr) const{
-	if(n_flt){
-		for(uint32_t k = 0; k < n_flt; ++k){
+void yon1_vnt_t::OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr) const {
+	if (n_flt) {
+		for (uint32_t k = 0; k < n_flt; ++k) {
 			int32_t tmpi = bcf_hdr_id2int(hdr, BCF_DT_ID, flt_hdr[k]->id.data());
 			bcf_update_filter(hdr, rec, &tmpi, 1);
 		}
@@ -426,35 +426,35 @@ void yon1_vnt_t::ToVcfString(const yon_vnt_hdr_t& header,
 	buffer += '\t';
 	buffer.AddReadble(pos+1);
 	buffer += '\t';
-	if(name.size()) buffer += name;
+	if (name.size()) buffer += name;
 	else buffer += '.';
 	buffer += '\t';
 	buffer.Add(alleles[0].allele, alleles[0].l_allele);
 	buffer += '\t';
 	buffer.Add(alleles[1].allele, alleles[1].l_allele);
-	for(int i = 2; i < n_alleles; ++i){
+	for (int i = 2; i < n_alleles; ++i) {
 		buffer += ',';
 		buffer.Add(alleles[i].allele, alleles[i].l_allele);
 	}
 	buffer += '\t';
-	if(std::isnan(qual)) buffer += '.';
+	if (std::isnan(qual)) buffer += '.';
 	else buffer.AddReadble(qual);
 	buffer += '\t';
 
-	if(flt_hdr.size() == 0) buffer += '.';
+	if (flt_hdr.size() == 0) buffer += '.';
 	else {
 		buffer.Add(flt_hdr[0]->id.data(), flt_hdr[0]->id.size());
-		for(int j = 1; j < flt_hdr.size(); ++j){
-			buffer += ',';
+		for (int j = 1; j < flt_hdr.size(); ++j) {
+			buffer += ';';
 			buffer.Add(flt_hdr[j]->id.data(), flt_hdr[j]->id.size());
 		}
 	}
 	buffer += '\t';
 
-	if(n_info){
-		for(int j = 0; j < n_info; ++j){
-			if(j != 0) buffer += ';';
-			if(info_hdr[j]->yon_type == YON_VCF_HEADER_FLAG){
+	if (n_info) {
+		for (int j = 0; j < n_info; ++j) {
+			if (j != 0) buffer += ';';
+			if (info_hdr[j]->yon_type == YON_VCF_HEADER_FLAG) {
 				buffer += info_hdr[j]->id;
 			} else {
 				buffer += info_hdr[j]->id;
@@ -466,16 +466,16 @@ void yon1_vnt_t::ToVcfString(const yon_vnt_hdr_t& header,
 		buffer += '.';
 	}
 
-	if(n_fmt){
+	if (n_fmt) {
 		buffer += '\t';
 		buffer += fmt_hdr[0]->id;
-		for(int j = 1; j < n_fmt; ++j){
+		for (int j = 1; j < n_fmt; ++j) {
 			buffer += ':';
 			buffer += fmt_hdr[j]->id;
 		}
 		buffer += '\t';
 
-		if(n_fmt == 1 &&
+		if (n_fmt == 1 &&
 		   controller.gt_available &&
 		   (display & YON_BLK_BV_GT))
 		{
@@ -484,7 +484,7 @@ void yon1_vnt_t::ToVcfString(const yon_vnt_hdr_t& header,
 
 			// Iterate over samples and print FORMAT:GT value in Vcf format.
 			gt->d_exp[0].PrintVcf(buffer, gt->m);
-			for(uint32_t s = 1; s < header.GetNumberSamples(); ++s){
+			for (uint32_t s = 1; s < header.GetNumberSamples(); ++s) {
 				buffer += '\t';
 				gt->d_exp[s].PrintVcf(buffer, gt->m);
 			}
@@ -493,7 +493,7 @@ void yon1_vnt_t::ToVcfString(const yon_vnt_hdr_t& header,
 		}
 		// Case when there are > 1 Vcf Format fields and the GT field
 		// is available.
-		else if(n_fmt > 1 && is_loaded_gt &&
+		else if (n_fmt > 1 && is_loaded_gt &&
 				controller.gt_available &&
 				(display & YON_BLK_BV_GT))
 		{
@@ -501,14 +501,14 @@ void yon1_vnt_t::ToVcfString(const yon_vnt_hdr_t& header,
 			gt->d_exp = external_rcd;
 
 			gt->d_exp[0].PrintVcf(buffer, gt->m);
-			for(uint32_t g = 1; g < n_fmt; ++g){
+			for (uint32_t g = 1; g < n_fmt; ++g) {
 				buffer += ':';
 				fmt[g]->ToVcfString(buffer, 0);
 			}
-			for(uint32_t s = 1; s < header.GetNumberSamples(); ++s){
+			for (uint32_t s = 1; s < header.GetNumberSamples(); ++s) {
 				buffer += '\t';
 				gt->d_exp[s].PrintVcf(buffer, gt->m);
-				for(uint32_t g = 1; g < n_fmt; ++g){
+				for (uint32_t g = 1; g < n_fmt; ++g) {
 					buffer += ':';
 					fmt[g]->ToVcfString(buffer, s);
 				}
@@ -519,15 +519,15 @@ void yon1_vnt_t::ToVcfString(const yon_vnt_hdr_t& header,
 		// All other cases.
 		else {
 			fmt[0]->ToVcfString(buffer, 0);
-			for(uint32_t g = 1; g < n_fmt; ++g){
+			for (uint32_t g = 1; g < n_fmt; ++g) {
 				buffer += ':';
 				fmt[g]->ToVcfString(buffer, 0);
 			}
 
-			for(uint32_t s = 1; s < header.GetNumberSamples(); ++s){
+			for (uint32_t s = 1; s < header.GetNumberSamples(); ++s) {
 				buffer += '\t';
 				fmt[0]->ToVcfString(buffer, s);
-				for(uint32_t g = 1; g < n_fmt; ++g){
+				for (uint32_t g = 1; g < n_fmt; ++g) {
 					buffer += ':';
 					fmt[g]->ToVcfString(buffer, s);
 				}
@@ -538,12 +538,12 @@ void yon1_vnt_t::ToVcfString(const yon_vnt_hdr_t& header,
 	buffer += '\n';
 }
 
-bool yon1_vnt_t::AddInfoFlag(const std::string& tag, yon_vnt_hdr_t& header){
+bool yon1_vnt_t::AddInfoFlag(const std::string& tag, yon_vnt_hdr_t& header) {
 	const YonInfo* info_tag = header.GetInfo(tag);
 	assert(info_tag != nullptr);
 
 	int32_t offset = GetInfoOffset(tag);
-	if(offset >= 0){
+	if (offset >= 0) {
 		delete info[offset];
 		info[offset] = new PrimitiveContainer<int8_t>();
 	} else {
@@ -553,22 +553,22 @@ bool yon1_vnt_t::AddInfoFlag(const std::string& tag, yon_vnt_hdr_t& header){
 	return true;
 }
 
-bool yon1_vnt_t::AddGenotypeStatistics(yon_vnt_hdr_t& header, const bool replace_existing){
-	if(gt_sum == nullptr){
+bool yon1_vnt_t::AddGenotypeStatistics(yon_vnt_hdr_t& header, const bool replace_existing) {
+	if (gt_sum == nullptr) {
 		std::cerr << utility::timestamp("LOG") << "Failed to update record. Genotype statistics have not been processed!" << std::endl;
 		return false;
 	}
 
-	if(gt_sum->d == nullptr){
+	if (gt_sum->d == nullptr) {
 		std::cerr << utility::timestamp("LOG") << "Failed to update record. Genotype statistics have not been lazy evaluated!" << std::endl;
 		return false;
 	}
 
-	if(n_info + 10 > m_info){
+	if (n_info + 10 > m_info) {
 		m_info = std::max(n_info + 10, m_info + 10);
 		PrimitiveContainerInterface** old = info;
 		info = new PrimitiveContainerInterface*[m_info];
-		for(int i = 0; i < n_info; ++i) info[i] = old[i];
+		for (int i = 0; i < n_info; ++i) info[i] = old[i];
 		delete [] old;
 	}
 
@@ -577,27 +577,27 @@ bool yon1_vnt_t::AddGenotypeStatistics(yon_vnt_hdr_t& header, const bool replace
 	this->AddInfo("AN", header, gt_sum->d->an);
 	this->AddInfo("HWE_P", header, gt_sum->d->hwe_p);
 
-	if(gt_sum->d->n_ac_af > 2){
+	if (gt_sum->d->n_ac_af > 2) {
 		this->AddInfo("AC", header, &gt_sum->d->ac[2], gt_sum->d->n_ac_af - 2);
 		this->AddInfo("AF", header, &gt_sum->d->af[2], gt_sum->d->n_ac_af - 2);
 	}
 
-	if(this->n_alleles > 2) this->AddInfoFlag("MULTI_ALLELIC", header);
+	if (this->n_alleles > 2) this->AddInfoFlag("MULTI_ALLELIC", header);
 
 	// Special case for AC_P
 	PrimitiveContainer<uint32_t>* ac_p = new PrimitiveContainer<uint32_t>();
 	ac_p->resize(n_base_ploidy * (gt_sum->d->n_ac_af - 2));
 
 	int j = 0;
-	for(uint32_t p = 0; p < n_base_ploidy; ++p){
-		for(uint32_t i = 2; i < gt_sum->d->n_ac_af; ++i, ++j){
+	for (uint32_t p = 0; p < n_base_ploidy; ++p) {
+		for (uint32_t i = 2; i < gt_sum->d->n_ac_af; ++i, ++j) {
 			ac_p->at(j) = gt_sum->alleles_strand[p][i];
 			++(*ac_p);
 		}
 	}
 	this->AddInfo("AC_P", header, ac_p);
 
-	if(n_base_ploidy == 2){
+	if (n_base_ploidy == 2) {
 		this->AddInfo("F_PIC", header, gt_sum->d->f_pic);
 		this->AddInfo("HET", header, gt_sum->d->heterozygosity);
 	}
@@ -606,50 +606,50 @@ bool yon1_vnt_t::AddGenotypeStatistics(yon_vnt_hdr_t& header, const bool replace
 	return true;
 }
 
-bool yon1_vnt_t::AddGenotypeStatisticsOcc(yon_vnt_hdr_t& header, std::vector<std::string>& names){
-	if(names.size() == 0)
+bool yon1_vnt_t::AddGenotypeStatisticsOcc(yon_vnt_hdr_t& header, std::vector<std::string>& names) {
+	if (names.size() == 0)
 		return true;
 
-	if(n_info + names.size()*10 + 3 > m_info){
+	if (n_info + names.size()*10 + 3 > m_info) {
 		m_info += names.size()*10 + 3;
 		PrimitiveContainerInterface** old = info;
 		info = new PrimitiveContainerInterface*[m_info];
-		for(int i = 0; i < n_info; ++i) info[i] = old[i];
+		for (int i = 0; i < n_info; ++i) info[i] = old[i];
 		delete [] old;
 	}
 
-	if(EvaluatePopGenOcc(header) == false){
+	if (EvaluatePopGenOcc(header) == false) {
 		//std::cerr << utility::timestamp("ERROR") << "Failed to evaluate popgen for occ..." << std::endl;
 		return false;
 	}
 
-	for(int i = 0; i < names.size(); ++i){
+	for (int i = 0; i < names.size(); ++i) {
 		this->AddInfo(names[i]+"_NM",    header, gt_sum_occ[i].d->nm);
 		this->AddInfo(names[i]+"_NPM",   header, gt_sum_occ[i].d->npm);
 		this->AddInfo(names[i]+"_AN",    header, gt_sum_occ[i].d->an);
 		this->AddInfo(names[i]+"_HWE_P", header, gt_sum_occ[i].d->hwe_p);
 
-		if(gt_sum_occ[i].d->n_ac_af > 2){
+		if (gt_sum_occ[i].d->n_ac_af > 2) {
 			this->AddInfo(names[i]+"_AC", header, &gt_sum_occ[i].d->ac[2], gt_sum_occ[i].d->n_ac_af - 2);
 			this->AddInfo(names[i]+"_AF", header, &gt_sum_occ[i].d->af[2], gt_sum_occ[i].d->n_ac_af - 2);
 		}
 
-		if(this->n_alleles > 2) this->AddInfoFlag(names[i]+"_MULTI_ALLELIC", header);
+		if (this->n_alleles > 2) this->AddInfoFlag(names[i]+"_MULTI_ALLELIC", header);
 
 		// Special case for AC_P
 		PrimitiveContainer<uint32_t>* ac_p = new PrimitiveContainer<uint32_t>();
 		ac_p->resize(n_base_ploidy * (gt_sum_occ[i].d->n_ac_af - 2));
 
 		int j = 0;
-		for(uint32_t p = 0; p < n_base_ploidy; ++p){
-			for(uint32_t k = 2; k < gt_sum_occ[i].d->n_ac_af; ++k, ++j){
+		for (uint32_t p = 0; p < n_base_ploidy; ++p) {
+			for (uint32_t k = 2; k < gt_sum_occ[i].d->n_ac_af; ++k, ++j) {
 				ac_p->at(j) = gt_sum_occ->alleles_strand[p][k];
 				++(*ac_p);
 			}
 		}
 		this->AddInfo(names[i]+"_AC_P", header, ac_p);
 
-		if(n_base_ploidy == 2){
+		if (n_base_ploidy == 2) {
 			this->AddInfo(names[i]+"_F_PIC", header, gt_sum_occ[i].d->f_pic);
 			this->AddInfo(names[i]+"_HET",   header, gt_sum_occ[i].d->heterozygosity);
 		}
@@ -659,10 +659,10 @@ bool yon1_vnt_t::AddGenotypeStatisticsOcc(yon_vnt_hdr_t& header, std::vector<std
 	return true;
 }
 
-bool yon1_vnt_t::EvaluatePopGenOcc(yon_vnt_hdr_t& header){
-	if(this->gt == nullptr) return false;
-	if(this->gt->n_o == 0) return false;
-	if(gt->n_allele != 2 || gt->m != 2) return false;
+bool yon1_vnt_t::EvaluatePopGenOcc(yon_vnt_hdr_t& header) {
+	if (this->gt == nullptr) return false;
+	if (this->gt->n_o == 0) return false;
+	if (gt->n_allele != 2 || gt->m != 2) return false;
 
 	// Number of genotypes across populations.
 	uint32_t n_gt_all = 0;
@@ -672,11 +672,11 @@ bool yon1_vnt_t::EvaluatePopGenOcc(yon_vnt_hdr_t& header){
 	float* exp = new float[this->gt->n_o];
 	uint32_t* n_s = new uint32_t[this->gt->n_o];
 
-	for(int i = 0; i < this->gt->n_o; ++i){
+	for (int i = 0; i < this->gt->n_o; ++i) {
 		const uint32_t het  = this->gt_sum_occ[i].gt[2][3].n_cnt + this->gt_sum_occ[i].gt[3][2].n_cnt;
 		const uint32_t n_gt = het + this->gt_sum_occ[i].gt[2][2].n_cnt + this->gt_sum_occ[i].gt[3][3].n_cnt;
 
-		if(n_gt == 0){
+		if (n_gt == 0) {
 			obs[i] = 0; exp[i] = 0; n_s[i] = 0;
 			continue;
 		}
@@ -710,11 +710,11 @@ bool yon1_vnt_t::EvaluatePopGenOcc(yon_vnt_hdr_t& header){
 		n_s[i] = n_gt;
 	}
 
-	if(n_gt_all == 0)
+	if (n_gt_all == 0)
 		return false;
 
 	float exp_sum = 0, obs_sum = 0;
-	for(int i = 0; i < this->gt->n_o; ++i){
+	for (int i = 0; i < this->gt->n_o; ++i) {
 		exp_sum += exp[i] * n_s[i];
 		obs_sum += obs[i] * n_s[i];
 	}
@@ -740,9 +740,9 @@ bool yon1_vnt_t::EvaluatePopGenOcc(yon_vnt_hdr_t& header){
 	//std::cerr << "FIT=" << (h_t - h_i) / h_t << std::endl;
 	float fis = 0, fst = 0, fit = 0;
 
-	if(h_s != 0) fis = (h_s - h_i) / h_s;
-	if(h_t != 0) fst = (h_t - h_s) / h_t;
-	if(h_t != 0) fit = (h_t - h_i) / h_t;
+	if (h_s != 0) fis = (h_s - h_i) / h_s;
+	if (h_t != 0) fst = (h_t - h_s) / h_t;
+	if (h_t != 0) fit = (h_t - h_i) / h_t;
 
 	this->AddInfo("FIS", header, fis);
 	this->AddInfo("FST", header, fst);
@@ -755,37 +755,37 @@ bool yon1_vnt_t::EvaluatePopGenOcc(yon_vnt_hdr_t& header){
 
 PrimitiveContainerInterface* yon1_vnt_t::GetInfo(const std::string& name) const {
 	std::unordered_map<std::string, uint32_t>::const_iterator it = info_map.find(name);
-	if(it != info_map.end()) return(info[it->second]);
+	if (it != info_map.end()) return(info[it->second]);
 	return(nullptr);
 }
 
 PrimitiveGroupContainerInterface* yon1_vnt_t::GetFmt(const std::string& name) const {
 	std::unordered_map<std::string, uint32_t>::const_iterator it = info_map.find(name);
-	if(it != info_map.end()) return(fmt[it->second]);
+	if (it != info_map.end()) return(fmt[it->second]);
 	return(nullptr);
 }
 
 const VcfFilter* yon1_vnt_t::GetFlt(const std::string& name) const {
 	std::unordered_map<std::string, uint32_t>::const_iterator it = flt_map.find(name);
-	if(it != flt_map.end()) return(flt_hdr[it->second]);
+	if (it != flt_map.end()) return(flt_hdr[it->second]);
 	return(nullptr);
 }
 
 int32_t yon1_vnt_t::GetInfoOffset(const std::string& name) const {
 	std::unordered_map<std::string, uint32_t>::const_iterator it = info_map.find(name);
-	if(it != info_map.end()) return(it->second);
+	if (it != info_map.end()) return(it->second);
 	return(-1);
 }
 
 int32_t yon1_vnt_t::GetFormatOffset(const std::string& name) const {
 	std::unordered_map<std::string, uint32_t>::const_iterator it = info_map.find(name);
-	if(it != info_map.end()) return(it->second);
+	if (it != info_map.end()) return(it->second);
 	return(-1);
 }
 
 int32_t yon1_vnt_t::GetFilterOffset(const std::string& name) const {
 	std::unordered_map<std::string, uint32_t>::const_iterator it = flt_map.find(name);
-	if(it != flt_map.end()) return(it->second);
+	if (it != flt_map.end()) return(it->second);
 	return(-1);
 }
 
@@ -795,39 +795,39 @@ int32_t yon1_vnt_t::GetFilterOffset(const std::string& name) const {
 yon_stats_sample::yon_stats_sample(void) :
 	n_ins(0), n_del(0), n_singleton(0), n_ts(0), n_tv(0), ts_tv_ratio(0), ins_del_dist(new uint64_t[512])
 {
-	for(uint32_t i = 0; i < 9; ++i){
+	for (uint32_t i = 0; i < 9; ++i) {
 		this->base_conv[i] = new uint64_t[9];
 		memset(&this->base_conv[i][0], 0, sizeof(uint64_t)*9);
 	}
 	memset(ins_del_dist, 0, 512*sizeof(uint64_t));
 }
 
-yon_stats_sample::~yon_stats_sample(void){
-	for(uint32_t i = 0; i < 9; ++i){
+yon_stats_sample::~yon_stats_sample(void) {
+	for (uint32_t i = 0; i < 9; ++i) {
 		delete [] this->base_conv[i];
 	}
 	delete [] ins_del_dist;
 }
 
-yon_stats_sample& yon_stats_sample::operator+=(const yon_stats_sample& other){
+yon_stats_sample& yon_stats_sample::operator+=(const yon_stats_sample& other) {
 	this->n_ins += other.n_ins;
 	this->n_del += other.n_del;
 	this->n_singleton += other.n_singleton;
 	this->n_ts += other.n_ts;
 	this->n_tv += other.n_tv;
-	for(int i = 0; i < 9; ++i){
-		for(uint32_t j = 0; j < 9; ++j){
+	for (int i = 0; i < 9; ++i) {
+		for (uint32_t j = 0; j < 9; ++j) {
 			this->base_conv[i][j] += other.base_conv[i][j];
 		}
 	}
 
-	for(int i = 0; i < 512; ++i)
+	for (int i = 0; i < 512; ++i)
 		this->ins_del_dist[i] += other.ins_del_dist[i];
 
 	return(*this);
 }
 
-bool yon_stats_sample::LazyEvalute(void){
+bool yon_stats_sample::LazyEvalute(void) {
 	// Transversions: A->C, C->A, T->G, G->T, A->T, T->A, C->G, G->C
 	// Transitions:   A->G, G->A, C->T, T->C
 	this->n_tv = this->base_conv[YON_GT_TSTV_A][YON_GT_TSTV_C] + this->base_conv[YON_GT_TSTV_C][YON_GT_TSTV_A] +
@@ -837,7 +837,7 @@ bool yon_stats_sample::LazyEvalute(void){
 	this->n_ts = this->base_conv[YON_GT_TSTV_A][YON_GT_TSTV_G] + this->base_conv[YON_GT_TSTV_G][YON_GT_TSTV_A] +
 				 this->base_conv[YON_GT_TSTV_T][YON_GT_TSTV_C] + this->base_conv[YON_GT_TSTV_C][YON_GT_TSTV_T];
 
-	if(this->n_tv == 0) this->ts_tv_ratio = 0;
+	if (this->n_tv == 0) this->ts_tv_ratio = 0;
 	else this->ts_tv_ratio = ((double)this->n_ts / this->n_tv);
 
 	this->n_ins = this->base_conv[YON_GT_TSTV_A][YON_GT_TSTV_INS] + this->base_conv[YON_GT_TSTV_T][YON_GT_TSTV_INS] +
@@ -857,11 +857,11 @@ yon_buffer_t& yon_stats_sample::ToJsonString(yon_buffer_t& buffer, const std::st
 	buffer += ",\"n_tv\":"  + std::to_string(this->n_tv);
 	buffer += ",\"ts_tv\":" + std::to_string(this->ts_tv_ratio);
 	buffer += ",\"conv\":[";
-	for(uint32_t i = 0; i < 9; ++i){
-		if(i != 0) buffer += ',';
+	for (uint32_t i = 0; i < 9; ++i) {
+		if (i != 0) buffer += ',';
 		buffer += '[';
 		buffer.AddReadble((uint64_t)this->base_conv[i][0]);
-		for(uint32_t j = 1; j < 9; ++j){
+		for (uint32_t j = 1; j < 9; ++j) {
 			buffer += ',';
 			buffer.AddReadble((uint64_t)this->base_conv[i][j]);
 		}
@@ -870,15 +870,15 @@ yon_buffer_t& yon_stats_sample::ToJsonString(yon_buffer_t& buffer, const std::st
 
 	buffer += ",\"in_dist\":[";
 	//buffer.AddReadble(this->ins_del_dist[0]);
-	for(int i = 1; i < 512; i+=2){
-		if(i != 1) buffer += ',';
+	for (int i = 1; i < 512; i+=2) {
+		if (i != 1) buffer += ',';
 		buffer.AddReadble(this->ins_del_dist[i]);
 	}
 	buffer += "]";
 	buffer += ",\"del_dist\":[";
 	//buffer.AddReadble(this->ins_del_dist[0]);
-	for(int i = 2; i < 512; i+=2){
-		if(i != 2) buffer += ',';
+	for (int i = 2; i < 512; i+=2) {
+		if (i != 2) buffer += ',';
 		buffer.AddReadble(this->ins_del_dist[i]);
 	}
 	buffer += ']';
@@ -888,23 +888,23 @@ yon_buffer_t& yon_stats_sample::ToJsonString(yon_buffer_t& buffer, const std::st
 	return(buffer);
 }
 
-void yon_stats_sample::reset(void){
+void yon_stats_sample::reset(void) {
 	n_ins = 0, n_del = 0, n_singleton = 0;
 	n_ts = 0, n_tv = 0; ts_tv_ratio = 0;
 
-	for(int i = 0; i < 9; ++i)
+	for (int i = 0; i < 9; ++i)
 		memset(&this->base_conv[i][0], 0, sizeof(uint64_t)*9);
 
-	for(int i = 0; i < 512; ++i) this->ins_del_dist[i] = 0;
+	for (int i = 0; i < 512; ++i) this->ins_del_dist[i] = 0;
 }
 
 yon_stats_tstv::yon_stats_tstv() : n_s(0), n_rcds(0), n_snp(0), n_mnp(0), n_ins(0), n_del(0), n_other(0), n_no_alts(0), n_singleton(0),
-				   n_biallelic(0), n_multi_allele(0), n_multi_allele_snp(0), sample(nullptr), alt_count(new uint64_t[32]){ memset(alt_count, 0, sizeof(uint64_t)*32); }
+				   n_biallelic(0), n_multi_allele(0), n_multi_allele_snp(0), sample(nullptr), alt_count(new uint64_t[32]) { memset(alt_count, 0, sizeof(uint64_t)*32); }
 yon_stats_tstv::yon_stats_tstv(const uint32_t n_samples) : n_s(n_samples), n_rcds(0), n_snp(0), n_mnp(0), n_ins(0), n_del(0), n_other(0), n_no_alts(0), n_singleton(0),
-										   n_biallelic(0), n_multi_allele(0), n_multi_allele_snp(0), sample(new yon_stats_sample[n_samples]), alt_count(new uint64_t[32]){ memset(alt_count, 0, sizeof(uint64_t)*32); }
-yon_stats_tstv::~yon_stats_tstv(void){ delete [] this->sample; delete [] this->alt_count; }
+										   n_biallelic(0), n_multi_allele(0), n_multi_allele_snp(0), sample(new yon_stats_sample[n_samples]), alt_count(new uint64_t[32]) { memset(alt_count, 0, sizeof(uint64_t)*32); }
+yon_stats_tstv::~yon_stats_tstv(void) { delete [] this->sample; delete [] this->alt_count; }
 
-yon_stats_tstv& yon_stats_tstv::operator+=(const yon_stats_tstv& other){
+yon_stats_tstv& yon_stats_tstv::operator+=(const yon_stats_tstv& other) {
 	assert(other.n_s == this->n_s);
 	this->n_rcds  += other.n_rcds;
 	this->n_snp   += other.n_snp;
@@ -918,14 +918,14 @@ yon_stats_tstv& yon_stats_tstv::operator+=(const yon_stats_tstv& other){
 	this->n_multi_allele += other.n_multi_allele;
 	this->n_multi_allele_snp += other.n_multi_allele_snp;
 
-	for(int i = 0; i < this->n_s; ++i) this->sample[i] += other.sample[i];
-	for(int i = 0; i < 32; ++i) this->alt_count[i] = other.alt_count[i];
+	for (int i = 0; i < this->n_s; ++i) this->sample[i] += other.sample[i];
+	for (int i = 0; i < 32; ++i) this->alt_count[i] = other.alt_count[i];
 
 	return(*this);
 }
 
-yon_stats_tstv& yon_stats_tstv::Add(const yon_stats_tstv& other, const yon_gt_ppa* ppa){
-	if(ppa == nullptr)
+yon_stats_tstv& yon_stats_tstv::Add(const yon_stats_tstv& other, const yon_gt_ppa* ppa) {
+	if (ppa == nullptr)
 		return(*this += other);
 
 	assert(ppa->n_s == this->n_s);
@@ -943,13 +943,13 @@ yon_stats_tstv& yon_stats_tstv::Add(const yon_stats_tstv& other, const yon_gt_pp
 	this->n_multi_allele += other.n_multi_allele;
 	this->n_multi_allele_snp += other.n_multi_allele_snp;
 
-	for(int i = 0; i < this->n_s; ++i) this->sample[(*ppa)[i]] += other.sample[i];
-	for(int i = 0; i < 32; ++i) this->alt_count[i] = other.alt_count[i];
+	for (int i = 0; i < this->n_s; ++i) this->sample[(*ppa)[i]] += other.sample[i];
+	for (int i = 0; i < 32; ++i) this->alt_count[i] = other.alt_count[i];
 
 	return(*this);
 }
 
-void yon_stats_tstv::SetSize(const uint32_t n_samples){
+void yon_stats_tstv::SetSize(const uint32_t n_samples) {
 	delete [] sample;
 	n_s = n_samples;
 	sample = new yon_stats_sample[n_samples];
@@ -983,14 +983,14 @@ yon_buffer_t& yon_stats_tstv::ToJsonString(yon_buffer_t& buffer, const std::vect
 	buffer +=  ",\"n_singleton\":";
 	buffer.AddReadble(this->n_singleton);
 	buffer +=  ",\"n_alts\":[";
-	for(int i = 0; i < 32; ++i){
-		if(i != 0) buffer += ',';
+	for (int i = 0; i < 32; ++i) {
+		if (i != 0) buffer += ',';
 		buffer.AddReadble(this->alt_count[i]);
 	}
 	buffer += "]},\n";
 	buffer += "\"PSI\":{\n";
-	for(uint32_t i = 0; i < this->n_s; ++i){
-		if(i != 0) buffer += ",\n";
+	for (uint32_t i = 0; i < this->n_s; ++i) {
+		if (i != 0) buffer += ",\n";
 		this->sample[i].ToJsonString(buffer, sample_names[i]);
 	}
 	buffer += "\n}\n}\n";
@@ -1003,27 +1003,27 @@ bool yon_stats_tstv::GetEncodings(const yon1_vnt_t& rcd, yon_stats_tstv_obj& hel
 	// Update number of records.
 	++this->n_rcds;
 
-	if(rcd.n_alleles == 1){
+	if (rcd.n_alleles == 1) {
 		std::cerr << utility::timestamp("LOG") << "Cannot have site with no ALT alleles described..." << std::endl;
 		return false;
 	}
 
 	// Update count for target variant line type.
 	// Case: variant site is multi-allelic.
-	if(rcd.n_alleles > 2){
+	if (rcd.n_alleles > 2) {
 		bool is_snp = true;
-		for(uint32_t i = 0; i < rcd.gt->n_allele; ++i){
-			if(rcd.alleles[i].l_allele != 1){
+		for (uint32_t i = 0; i < rcd.gt->n_allele; ++i) {
+			if (rcd.alleles[i].l_allele != 1) {
 				is_snp = false;
 				break;
 			}
 		}
 
-		if(is_snp) ++this->n_multi_allele_snp;
+		if (is_snp) ++this->n_multi_allele_snp;
 		else ++this->n_multi_allele;
 	}
 	// Case: variant site is bi-allelic.
-	else if(rcd.n_alleles == 2){
+	else if (rcd.n_alleles == 2) {
 		++this->n_biallelic;
 	}
 
@@ -1035,7 +1035,7 @@ bool yon_stats_tstv::GetEncodings(const yon1_vnt_t& rcd, yon_stats_tstv_obj& hel
 	// If the reference allele is of a single character wide then
 	// we assume the reference site is a single base. This implicitly
 	// means there cannot be any encodings for deletions.
-	if(rcd.alleles[0].size() == 1){
+	if (rcd.alleles[0].size() == 1) {
 		// Encode alleles.
 		helper.allele_encodings[0] = YON_GT_TSTV_MISS;
 		helper.allele_encodings[1] = YON_GT_TSTV_EOV;
@@ -1043,12 +1043,12 @@ bool yon_stats_tstv::GetEncodings(const yon1_vnt_t& rcd, yon_stats_tstv_obj& hel
 		bool has_insert = false;
 
 		// Iterate over available alleles.
-		for(uint32_t i = 2; i < rcd.gt->n_allele + 2; ++i){
-			if(rcd.alleles[i - 2].l_allele == 1){
+		for (uint32_t i = 2; i < rcd.gt->n_allele + 2; ++i) {
+			if (rcd.alleles[i - 2].l_allele == 1) {
 				helper.allele_encodings[i] = YON_STATS_TSTV_LOOKUP[rcd.alleles[i - 2].allele[0]];
 				helper.b_size[i] = 0;
 			} else {
-			if(rcd.alleles[i - 2].l_allele > 1 &&
+			if (rcd.alleles[i - 2].l_allele > 1 &&
 				   std::regex_match(rcd.alleles[i - 2].ToString(), YON_REGEX_CANONICAL_BASES))
 				{
 					//std::cerr << "is insertion: " << rcd.alleles[i - 2].l_allele - rcd.alleles[0].l_allele << std::endl;
@@ -1063,7 +1063,7 @@ bool yon_stats_tstv::GetEncodings(const yon1_vnt_t& rcd, yon_stats_tstv_obj& hel
 		}
 
 		// Ascertain that the reference allele is valid for this purpose.
-		if(helper.allele_encodings[YON_GT_RCD_REF] > 3){
+		if (helper.allele_encodings[YON_GT_RCD_REF] > 3) {
 			std::cerr << utility::timestamp("LOG") << "Bad reference allele: " << rcd.alleles[0].ToString() << std::endl;
 			return false;
 		}
@@ -1083,10 +1083,10 @@ bool yon_stats_tstv::GetEncodings(const yon1_vnt_t& rcd, yon_stats_tstv_obj& hel
 		memset(helper.b_size, 0, sizeof(int32_t)*3);
 
 		// Iterate over available alleles.
-		for(uint32_t i = 3; i < rcd.gt->n_allele + 2; ++i){
+		for (uint32_t i = 3; i < rcd.gt->n_allele + 2; ++i) {
 			// If the target allele is a simple SNV.
-			if(rcd.alleles[i - 2].l_allele == 1){
-				if(std::regex_match(rcd.alleles[i - 2].ToString(), YON_REGEX_CANONICAL_BASES)){
+			if (rcd.alleles[i - 2].l_allele == 1) {
+				if (std::regex_match(rcd.alleles[i - 2].ToString(), YON_REGEX_CANONICAL_BASES)) {
 					//std::cerr << "target is deletion: " << i - 2 << "/" << rcd.n_alleles << "; " << rcd.alleles[0].ToString() << "->" << rcd.alleles[i - 2].ToString() << " size: " << rcd.alleles[i - 2].l_allele - rcd.alleles[0].l_allele << std::endl;
 					helper.allele_encodings[i] = YON_GT_TSTV_DEL;
 					helper.b_size[i] = std::max(-255, (int)rcd.alleles[i - 2].l_allele - rcd.alleles[0].l_allele);
@@ -1099,7 +1099,7 @@ bool yon_stats_tstv::GetEncodings(const yon1_vnt_t& rcd, yon_stats_tstv_obj& hel
 			// If the target allele length is shorter than the reference
 			// allele length and is comprised of only canonical bases then
 			// classify this allele as a deletion.
-			else if(rcd.alleles[i - 2].l_allele < ref_length &&
+			else if (rcd.alleles[i - 2].l_allele < ref_length &&
 					std::regex_match(rcd.alleles[i - 2].ToString(), YON_REGEX_CANONICAL_BASES))
 			{
 				//std::cerr << "target is deletion: " << i - 2 << "/" << rcd.n_alleles << "; " << rcd.alleles[0].ToString() << "->" << rcd.alleles[i - 2].ToString() << " size: " << rcd.alleles[i - 2].l_allele - rcd.alleles[0].l_allele << std::endl;
@@ -1107,7 +1107,7 @@ bool yon_stats_tstv::GetEncodings(const yon1_vnt_t& rcd, yon_stats_tstv_obj& hel
 				helper.b_size[i] = std::max(-255, (int)rcd.alleles[i - 2].l_allele - rcd.alleles[0].l_allele);
 				has_deletion = true;
 			} else {
-				if(rcd.alleles[i - 2].l_allele > ref_length &&
+				if (rcd.alleles[i - 2].l_allele > ref_length &&
 				   std::regex_match(rcd.alleles[i - 2].ToString(), YON_REGEX_CANONICAL_BASES))
 				{
 					//std::cerr << "is insertion: " << rcd.alleles[i - 2].ToString() << ": " << rcd.alleles[i - 2].l_allele - rcd.alleles[0].l_allele << "/" << rcd.n_alleles << std::endl;
@@ -1130,12 +1130,12 @@ bool yon_stats_tstv::GetEncodings(const yon1_vnt_t& rcd, yon_stats_tstv_obj& hel
 }
 
 bool yon_stats_tstv::Update(const yon1_vnt_t& rcd, yon_gt_rcd** rcds) {
-	if(rcd.is_loaded_gt == false)
+	if (rcd.is_loaded_gt == false)
 		return false;
 
-	if((rcd.gt->eval_cont & YON_GT_UN_RCDS) == false){
+	if ((rcd.gt->eval_cont & YON_GT_UN_RCDS) == false) {
 		bool eval = rcd.gt->Evaluate();
-		if(eval == false){
+		if (eval == false) {
 			std::cerr << "failed to evaluate" << std::endl;
 			return false;
 		}
@@ -1143,15 +1143,15 @@ bool yon_stats_tstv::Update(const yon1_vnt_t& rcd, yon_gt_rcd** rcds) {
 
 	assert(this->n_s == rcd.gt->n_s);
 	yon_stats_tstv_obj helper(rcd.gt->n_allele + 2);
-	if(this->GetEncodings(rcd, helper) == false)
+	if (this->GetEncodings(rcd, helper) == false)
 		return false;
 
 	// Update number of alt alleles.
 	++this->alt_count[std::min(31, rcd.n_alleles - 1)];
 
 	// Perform actual work.
-	for(uint32_t i = 0; i < rcd.gt->n_s; ++i){
-		for(uint32_t j = 0; j < rcd.gt->m; ++j){
+	for (uint32_t i = 0; i < rcd.gt->n_s; ++i) {
+		for (uint32_t j = 0; j < rcd.gt->m; ++j) {
 			const uint8_t allele = YON_GT_RCD_ALLELE_UNPACK(rcds[i]->allele[j]);
 			++this->sample[i].base_conv[helper.allele_encodings[YON_GT_RCD_REF]][helper.allele_encodings[allele]];
 			++this->sample[i].ins_del_dist[(helper.b_size[allele] << 1) ^ (helper.b_size[allele] >> 31)];
@@ -1160,8 +1160,8 @@ bool yon_stats_tstv::Update(const yon1_vnt_t& rcd, yon_gt_rcd** rcds) {
 		}
 	}
 
-	if(helper.n_non_ref == 0) ++this->n_no_alts;
-	else if(helper.n_non_ref == 1){
+	if (helper.n_non_ref == 0) ++this->n_no_alts;
+	else if (helper.n_non_ref == 1) {
 		++this->n_singleton;
 		++this->sample[helper.t_non_ref].n_singleton;
 		assert(helper.t_non_ref < this->n_s);
@@ -1170,30 +1170,30 @@ bool yon_stats_tstv::Update(const yon1_vnt_t& rcd, yon_gt_rcd** rcds) {
 	return true;
 }
 
-bool yon_stats_tstv::Update(const yon1_vnt_t& rcd){
-	if(rcd.is_loaded_gt == false)
+bool yon_stats_tstv::Update(const yon1_vnt_t& rcd) {
+	if (rcd.is_loaded_gt == false)
 		return false;
 
-	if((rcd.gt->eval_cont & YON_GT_UN_RCDS) == false){
+	if ((rcd.gt->eval_cont & YON_GT_UN_RCDS) == false) {
 		bool eval = rcd.gt->Evaluate();
-		if(eval == false){
+		if (eval == false) {
 			std::cerr << "failed to evaluate" << std::endl;
 			return false;
 		}
 	}
 
 	yon_stats_tstv_obj helper(rcd.gt->n_allele + 2);
-	if(this->GetEncodings(rcd, helper) == false)
+	if (this->GetEncodings(rcd, helper) == false)
 		return false;
 
 	// Update number of alt alleles.
 	++this->alt_count[std::min(31, rcd.n_alleles - 1)];
 
-	if(rcd.gt->m == 2) this->UpdateDiploid(rcd.gt, helper);
+	if (rcd.gt->m == 2) this->UpdateDiploid(rcd.gt, helper);
 	else this->UpdateNPloidy(rcd.gt, helper);
 
-	if(helper.n_non_ref == 0) ++this->n_no_alts;
-	else if(helper.n_non_ref == 1){
+	if (helper.n_non_ref == 0) ++this->n_no_alts;
+	else if (helper.n_non_ref == 1) {
 		++this->n_singleton;
 		++this->sample[helper.t_non_ref].n_singleton;
 		assert(helper.t_non_ref < this->n_s);
@@ -1206,14 +1206,14 @@ void yon_stats_tstv::UpdateDiploid(const yon_gt* gt,
                                    yon_stats_tstv_obj& helper)
 {
 	uint32_t sample_offset = 0;
-	for(uint32_t i = 0; i < gt->n_i; ++i){
-		if((YON_GT_RCD_ALLELE_UNPACK(gt->rcds[i].allele[0]) == YON_GT_RCD_REF) && (YON_GT_RCD_ALLELE_UNPACK(gt->rcds[i].allele[1]) == YON_GT_RCD_REF)){
+	for (uint32_t i = 0; i < gt->n_i; ++i) {
+		if ((YON_GT_RCD_ALLELE_UNPACK(gt->rcds[i].allele[0]) == YON_GT_RCD_REF) && (YON_GT_RCD_ALLELE_UNPACK(gt->rcds[i].allele[1]) == YON_GT_RCD_REF)) {
 			sample_offset += gt->rcds[i].run_length;
 			continue;
 		}
 
-		for(uint32_t r = 0; r < gt->rcds[i].run_length; ++r, ++sample_offset){
-			for(uint32_t j = 0; j < gt->m; ++j){
+		for (uint32_t r = 0; r < gt->rcds[i].run_length; ++r, ++sample_offset) {
+			for (uint32_t j = 0; j < gt->m; ++j) {
 				const uint8_t allele = YON_GT_RCD_ALLELE_UNPACK(gt->rcds[i].allele[j]);
 				++this->sample[sample_offset].base_conv[helper.allele_encodings[YON_GT_RCD_REF]][helper.allele_encodings[allele]];
 				++this->sample[sample_offset].ins_del_dist[(helper.b_size[allele] << 1) ^ (helper.b_size[allele] >> 31)];
@@ -1229,21 +1229,21 @@ void yon_stats_tstv::UpdateNPloidy(const yon_gt* gt,
                                    yon_stats_tstv_obj& helper)
 {
 	uint32_t sample_offset = 0;
-	for(uint32_t i = 0; i < gt->n_i; ++i){
+	for (uint32_t i = 0; i < gt->n_i; ++i) {
 		// If current run-length encoded object has all reference
 		// template then continue.
 		uint32_t n_refs = 0;
-		for(uint32_t j = 0; j < gt->m; ++j)
+		for (uint32_t j = 0; j < gt->m; ++j)
 			n_refs += (YON_GT_RCD_ALLELE_UNPACK(gt->rcds[i].allele[j]) == YON_GT_RCD_REF);
 
-		if(n_refs == gt->m){
+		if (n_refs == gt->m) {
 			sample_offset += gt->rcds[i].run_length;
 			continue;
 		}
 
 		// Iterate over samples in the current run-length encoded object.
-		for(uint32_t r = 0; r < gt->rcds[i].run_length; ++r, ++sample_offset){
-			for(uint32_t j = 0; j < gt->m; ++j){
+		for (uint32_t r = 0; r < gt->rcds[i].run_length; ++r, ++sample_offset) {
+			for (uint32_t j = 0; j < gt->m; ++j) {
 				const uint8_t allele = YON_GT_RCD_ALLELE_UNPACK(gt->rcds[i].allele[j]);
 				++this->sample[sample_offset].base_conv[helper.allele_encodings[YON_GT_RCD_REF]][helper.allele_encodings[allele]];
 				++this->sample[sample_offset].ins_del_dist[(helper.b_size[allele] << 1) ^ (helper.b_size[allele] >> 31)];
@@ -1255,12 +1255,12 @@ void yon_stats_tstv::UpdateNPloidy(const yon_gt* gt,
 	assert(sample_offset == this->n_s);
 }
 
-void yon_stats_tstv::reset(void){
+void yon_stats_tstv::reset(void) {
 	n_rcds = 0;
 	n_snp = 0, n_mnp = 0, n_ins = 0, n_del = 0, n_other = 0;
 	n_no_alts = 0, n_biallelic = 0, n_multi_allele = 0, n_multi_allele_snp = 0, n_singleton = 0;
-	for(int i = 0; i < this->n_s; ++i) this->sample[i].reset();
-	for(int i = 0; i < 32; ++i) this->alt_count[i] = 0;
+	for (int i = 0; i < this->n_s; ++i) this->sample[i].reset();
+	for (int i = 0; i < 32; ++i) this->alt_count[i] = 0;
 }
 
 }

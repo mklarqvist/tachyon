@@ -42,7 +42,7 @@ public:
 	bool operator<(const self_type& other) const;
 	bool operator<=(const self_type& other) const;
 	bool operator!=(const self_type& other) const;
-	inline bool operator==(const self_type& other) const{ return(!(*this != other)); }
+	inline bool operator==(const self_type& other) const { return(!(*this != other)); }
 
 	/**<
 	 * Reset members of this struct to their original values

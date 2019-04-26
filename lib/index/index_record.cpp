@@ -9,38 +9,38 @@ yon1_idx_rec::yon1_idx_rec() :
 	min_bin(std::numeric_limits<int32_t>::max()), max_bin(0)
 {}
 
-bool yon1_idx_rec::operator!=(const self_type& other) const{
-	if(this->block_id         != other.block_id)         return true;
-	if(this->contig_id        != other.contig_id)        return true;
-	if(this->n_variants       != other.n_variants)      return true;
-	if(this->byte_offset      != other.byte_offset)     return true;
-	if(this->byte_offset_end  != other.byte_offset_end) return true;
-	if(this->min_position     != other.min_position)     return true;
-	if(this->max_position     != other.max_position)     return true;
-	if(this->min_bin          != other.min_bin)          return true;
-	if(this->max_bin          != other.max_bin)          return true;
+bool yon1_idx_rec::operator!=(const self_type& other) const {
+	if (this->block_id         != other.block_id)         return true;
+	if (this->contig_id        != other.contig_id)        return true;
+	if (this->n_variants       != other.n_variants)      return true;
+	if (this->byte_offset      != other.byte_offset)     return true;
+	if (this->byte_offset_end  != other.byte_offset_end) return true;
+	if (this->min_position     != other.min_position)     return true;
+	if (this->max_position     != other.max_position)     return true;
+	if (this->min_bin          != other.min_bin)          return true;
+	if (this->max_bin          != other.max_bin)          return true;
 	return false;
 }
 
-bool yon1_idx_rec::operator<(const self_type& other) const{
-	if(this->block_id  < other.block_id)  return true;
-	if(this->block_id  > other.block_id)  return false;
-	if(this->contig_id < other.contig_id) return true;
-	if(this->contig_id > other.contig_id) return false;
+bool yon1_idx_rec::operator<(const self_type& other) const {
+	if (this->block_id  < other.block_id)  return true;
+	if (this->block_id  > other.block_id)  return false;
+	if (this->contig_id < other.contig_id) return true;
+	if (this->contig_id > other.contig_id) return false;
 	return true;
 }
 
-bool yon1_idx_rec::operator<=(const self_type& other) const{
-	if(this->block_id  <= other.block_id)  return true;
-	if(this->block_id  >  other.block_id)  return false;
-	if(this->contig_id <= other.contig_id) return true;
-	if(this->contig_id >  other.contig_id) return false;
+bool yon1_idx_rec::operator<=(const self_type& other) const {
+	if (this->block_id  <= other.block_id)  return true;
+	if (this->block_id  >  other.block_id)  return false;
+	if (this->contig_id <= other.contig_id) return true;
+	if (this->contig_id >  other.contig_id) return false;
 	return true;
 }
 
-yon1_idx_rec::~yon1_idx_rec(){}
+yon1_idx_rec::~yon1_idx_rec() {}
 
-void yon1_idx_rec::reset(void){
+void yon1_idx_rec::reset(void) {
 	this->block_id         = 0;
 	this->contig_id        = -1;
 	this->n_variants       = 0;
@@ -52,12 +52,12 @@ void yon1_idx_rec::reset(void){
 	this->max_bin          = 0;
 }
 
-std::ostream& yon1_idx_rec::Print(std::ostream& stream) const{
+std::ostream& yon1_idx_rec::Print(std::ostream& stream) const {
 	stream << block_id << '\t' << contig_id << '\t' << n_variants << "\tOffset: " << byte_offset << '-' << byte_offset_end << " Position: " << min_position << '-' << max_position << " Bins: " << min_bin << '-' << max_bin;
 	return(stream);
 }
 
-std::ostream& operator<<(std::ostream& stream, const yon1_idx_rec& entry){
+std::ostream& operator<<(std::ostream& stream, const yon1_idx_rec& entry) {
 	utility::SerializePrimitive(entry.block_id,     stream);
 	utility::SerializePrimitive(entry.contig_id,    stream);
 	utility::SerializePrimitive(entry.n_variants,   stream);
@@ -70,7 +70,7 @@ std::ostream& operator<<(std::ostream& stream, const yon1_idx_rec& entry){
 	return(stream);
 }
 
-std::istream& operator>>(std::istream& stream, yon1_idx_rec& entry){
+std::istream& operator>>(std::istream& stream, yon1_idx_rec& entry) {
 	utility::DeserializePrimitive(entry.block_id,     stream);
 	utility::DeserializePrimitive(entry.contig_id,    stream);
 	utility::DeserializePrimitive(entry.n_variants,   stream);

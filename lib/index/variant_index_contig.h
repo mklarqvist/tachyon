@@ -32,45 +32,45 @@ public:
     void operator=(const self_type& other);
     ~VariantIndexContig();
 
-    self_type& operator+=(const self_type& other){
+    self_type& operator+=(const self_type& other) {
     	this->n_sites += other.n_sites;
     	assert(this->n_bins == other.n_bins);
     	assert(this->n_levels == other.n_levels);
-    	for(int i = 0; i < this->n_bins; ++i)
+    	for (int i = 0; i < this->n_bins; ++i)
     		this->bins[i] += other.bins[i];
 
     	return(*this);
     }
 
 	// Element access
-	inline reference at(const size_type& position){ return(this->bins[position]); }
-	inline const_reference at(const size_type& position) const{ return(this->bins[position]); }
-	inline reference operator[](const size_type& position){ return(this->bins[position]); }
-	inline const_reference operator[](const size_type& position) const{ return(this->bins[position]); }
-	inline pointer data(void){ return(this->bins); }
-	inline const_pointer data(void) const{ return(this->bins); }
-	inline reference front(void){ return(this->bins[0]); }
-	inline const_reference front(void) const{ return(this->bins[0]); }
-	inline reference back(void){ return(this->bins[this->n_bins - 1]); }
-	inline const_reference back(void) const{ return(this->bins[this->n_bins - 1]); }
+	inline reference at(const size_type& position) { return(this->bins[position]); }
+	inline const_reference at(const size_type& position) const { return(this->bins[position]); }
+	inline reference operator[](const size_type& position) { return(this->bins[position]); }
+	inline const_reference operator[](const size_type& position) const { return(this->bins[position]); }
+	inline pointer data(void) { return(this->bins); }
+	inline const_pointer data(void) const { return(this->bins); }
+	inline reference front(void) { return(this->bins[0]); }
+	inline const_reference front(void) const { return(this->bins[0]); }
+	inline reference back(void) { return(this->bins[this->n_bins - 1]); }
+	inline const_reference back(void) const { return(this->bins[this->n_bins - 1]); }
 
 	// Capacity
-	inline bool empty(void) const{ return(this->n_bins == 0); }
-	inline const size_type& size(void) const{ return(this->n_bins); }
-	inline const size_type& capacity(void) const{ return(this->n_capacity); }
-	inline const size_type& size_sites(void) const{ return(this->n_sites); }
+	inline bool empty(void) const { return(this->n_bins == 0); }
+	inline const size_type& size(void) const { return(this->n_bins); }
+	inline const size_type& capacity(void) const { return(this->n_capacity); }
+	inline const size_type& size_sites(void) const { return(this->n_sites); }
 
 	// Iterator
-	inline iterator begin(){ return iterator(&this->bins[0]); }
-	inline iterator end(){ return iterator(&this->bins[this->n_bins]); }
-	inline const_iterator begin() const{ return const_iterator(&this->bins[0]); }
-	inline const_iterator end() const{ return const_iterator(&this->bins[this->n_bins]); }
-	inline const_iterator cbegin() const{ return const_iterator(&this->bins[0]); }
-	inline const_iterator cend() const{ return const_iterator(&this->bins[this->n_bins]); }
+	inline iterator begin() { return iterator(&this->bins[0]); }
+	inline iterator end() { return iterator(&this->bins[this->n_bins]); }
+	inline const_iterator begin() const { return const_iterator(&this->bins[0]); }
+	inline const_iterator end() const { return const_iterator(&this->bins[this->n_bins]); }
+	inline const_iterator cbegin() const { return const_iterator(&this->bins[0]); }
+	inline const_iterator cend() const { return const_iterator(&this->bins[this->n_bins]); }
 
 	// Accessor
-	inline uint32_t& GetContigID(void){ return(this->contig_id); }
-	inline const uint32_t& GetContigID(void) const{ return(this->contig_id); }
+	inline uint32_t& GetContigID(void) { return(this->contig_id); }
+	inline const uint32_t& GetContigID(void) const { return(this->contig_id); }
 
 	/**<
 	 * Add a target interval tuple (from,to,block_ID)
@@ -95,7 +95,7 @@ private:
 	 * @param length Input integer start value
 	 * @return       Return a target integer divisible by 4
 	 */
-    inline uint64_t RoundLengthClosestBase4(const uint64_t& length) const{
+    inline uint64_t RoundLengthClosestBase4(const uint64_t& length) const {
 		return( ( pow(4,this->n_levels) - (length % (uint64_t)pow(4,this->n_levels)) ) + length );
     }
 
@@ -103,20 +103,20 @@ private:
      * Pre-calculate the cumulative distribution of 4^(0:levels-1).
      * These values are used to find the array offset for levels > 0
      */
-    void CalculateCumulativeSums(void){
-    	if(this->n_levels == 0) return;
+    void CalculateCumulativeSums(void) {
+    	if (this->n_levels == 0) return;
 
     	delete [] this->bins_cumsum;
     	this->bins_cumsum = new uint32_t[this->n_levels + 1]; // inclusive last
 
     	uint32_t total = 0;
-    	for(uint32_t i = 0; i <= this->n_levels; ++i){
+    	for (uint32_t i = 0; i <= this->n_levels; ++i) {
     		total += pow(4,i);
     		this->bins_cumsum[i] = total - 1; // remove 0 to start relative zero
     	}
     }
 
-    friend std::ostream& operator<<(std::ostream& stream, const self_type& contig){
+    friend std::ostream& operator<<(std::ostream& stream, const self_type& contig) {
     	stream.write(reinterpret_cast<const char*>(&contig.contig_id),        sizeof(uint32_t));
     	stream.write(reinterpret_cast<const char*>(&contig.l_contig),         sizeof(uint64_t));
     	stream.write(reinterpret_cast<const char*>(&contig.l_contig_rounded), sizeof(uint64_t));
@@ -125,23 +125,23 @@ private:
     	stream.write(reinterpret_cast<const char*>(&contig.n_sites),          sizeof(size_type));
 
     	size_type n_items_written = 0;
-    	for(uint32_t i = 0; i < contig.size(); ++i){
-    		if(contig.bins[i].size()) ++n_items_written;
+    	for (uint32_t i = 0; i < contig.size(); ++i) {
+    		if (contig.bins[i].size()) ++n_items_written;
     	}
     	stream.write(reinterpret_cast<const char*>(&n_items_written), sizeof(size_type));
 
-    	for(uint32_t i = 0; i < contig.size(); ++i){
+    	for (uint32_t i = 0; i < contig.size(); ++i) {
     		// If bins[i] contains data
-    		if(contig.bins[i].size())
+    		if (contig.bins[i].size())
     			stream << contig.bins[i];
     	}
     	return(stream);
     }
 
-    friend std::istream& operator>>(std::istream& stream, self_type& contig){
+    friend std::istream& operator>>(std::istream& stream, self_type& contig) {
     	// Clear old data
-    	if(contig.size()){
-			for(std::size_t i = 0; i < contig.size(); ++i)
+    	if (contig.size()) {
+			for (std::size_t i = 0; i < contig.size(); ++i)
 				(contig.bins + i)->~VariantIndexBin();
 
 			::operator delete[](static_cast<void*>(contig.bins));
@@ -162,14 +162,14 @@ private:
 
 		// Allocate new
 		contig.bins = static_cast<pointer>(::operator new[](contig.capacity()*sizeof(value_type)));
-		for(uint32_t i = 0; i < contig.size(); ++i){
+		for (uint32_t i = 0; i < contig.size(); ++i) {
 			new( &contig.bins[i] ) value_type(  );
 			contig.bins[i].binID_ = i;
 		}
 		contig.CalculateCumulativeSums();
 
 		// Load data accordingly
-		for(uint32_t i = 0; i < n_items_written; ++i){
+		for (uint32_t i = 0; i < n_items_written; ++i) {
 			value_type temp;
 			stream >> temp;
 			//std::cerr << "loading: " << temp.size() << " entries" << std::endl;

@@ -46,9 +46,9 @@ public:
 	friend std::ostream& operator<<(std::ostream& stream, const KeychainKey& key);
 	friend std::istream& operator>>(std::istream& stream, KeychainKey& key);
 
-	inline TACHYON_ENCRYPTION GetType(void) const{ return(TACHYON_ENCRYPTION(this->encryption_type)); }
-	inline uint64_t& GetIdx(void){ return(this->field_id); }
-	inline const uint64_t& GetIdx(void) const{ return(this->field_id); }
+	inline TACHYON_ENCRYPTION GetType(void) const { return(TACHYON_ENCRYPTION(this->encryption_type)); }
+	inline uint64_t& GetIdx(void) { return(this->field_id); }
+	inline const uint64_t& GetIdx(void) const { return(this->field_id); }
 
 	// Virtual functions.
 	virtual std::ostream& print(std::ostream& stream) =0;
@@ -80,7 +80,7 @@ public:
 		memcpy(&this->iv[0],  &other.iv[0],  IVLength);
 	}
 
-	KeychainKeyBase& operator=(const KeychainKeyBase& other){
+	KeychainKeyBase& operator=(const KeychainKeyBase& other) {
 		this->field_id = other.field_id;
 		this->encryption_type = other.encryption_type;
 		memcpy(&this->key[0], &other.key[0], KeyLength);
@@ -88,9 +88,9 @@ public:
 		return(*this);
 	}
 
-	virtual inline KeychainKey* Clone() const{ return new self_type(*this); }
+	virtual inline KeychainKey* Clone() const { return new self_type(*this); }
 
-	virtual yon_buffer_t& AddToBuffer(yon_buffer_t& buffer) const{
+	virtual yon_buffer_t& AddToBuffer(yon_buffer_t& buffer) const {
 		buffer += this->encryption_type;
 		buffer += this->field_id;
 		buffer.Add((const char*)&this->key[0], KeyLength);
@@ -98,7 +98,7 @@ public:
 		return(buffer);
 	}
 
-	virtual std::ostream& WriteToStream(std::ostream& stream) const{
+	virtual std::ostream& WriteToStream(std::ostream& stream) const {
 		stream.write(reinterpret_cast<const char*>(&this->encryption_type), sizeof(uint8_t));
 		stream.write(reinterpret_cast<const char*>(&this->field_id), sizeof(uint64_t));
 		stream.write((const char*)&this->key[0], KeyLength);
@@ -106,7 +106,7 @@ public:
 		return(stream);
 	}
 
-	virtual std::istream& ReadFromStream(std::istream& stream){
+	virtual std::istream& ReadFromStream(std::istream& stream) {
 		//stream.read(reinterpret_cast<char*>(&key.encryption_type), sizeof(uint8_t));
 		stream.read(reinterpret_cast<char*>(&this->field_id), sizeof(uint64_t));
 		stream.read((char*)&this->key[0], KeyLength);
@@ -114,14 +114,14 @@ public:
 		return(stream);
 	}
 
-	virtual std::ostream& print(std::ostream& stream){
+	virtual std::ostream& print(std::ostream& stream) {
 		for(uint32_t i = 0; i < KeyLength; ++i) stream << std::hex << (int)this->key[i];
 		stream << '\t';
 		for(uint32_t i = 0; i < IVLength; ++i) stream << std::hex << (int)this->iv[i];
 		return(stream);
 	}
 
-	inline bool InitiateRandom(void){
+	inline bool InitiateRandom(void) {
 		RAND_bytes(&this->key[0], KeyLength);
 		RAND_bytes(&this->iv[0],  IVLength);
 		return true;
@@ -135,14 +135,14 @@ public:
 template <uint8_t KeyLength = 32, uint8_t IVLength = 16, uint8_t TagLength = 16>
 struct KeychainKeyGCM : public KeychainKeyBase<KeyLength, IVLength>{
 public:
-	typedef KeychainKeyGCM                   self_type;
+	typedef KeychainKeyGCM self_type;
 	typedef KeychainKeyBase<KeyLength, IVLength> parent_type;
 
 public:
-	KeychainKeyGCM(){
+	KeychainKeyGCM() {
 		this->encryption_type = YON_ENCRYPTION_AES_256_GCM;
 	}
-	~KeychainKeyGCM(){}
+	~KeychainKeyGCM() {}
 
 	KeychainKeyGCM(const KeychainKeyGCM& other) :
 		parent_type(other)
@@ -151,7 +151,7 @@ public:
 		memcpy(&this->tag[0], &other.tag[0], TagLength);
 	}
 
-	KeychainKeyGCM& operator=(const KeychainKeyGCM& other){
+	KeychainKeyGCM& operator=(const KeychainKeyGCM& other) {
 		this->field_id = other.field_id;
 		this->encryption_type = other.encryption_type;
 		memcpy(&this->key[0], &other.key[0], KeyLength);
@@ -160,9 +160,9 @@ public:
 		return(*this);
 	}
 
-	inline KeychainKey* Clone() const{ return new self_type(*this); }
+	inline KeychainKey* Clone() const { return new self_type(*this); }
 
-	std::ostream& print(std::ostream& stream){
+	std::ostream& print(std::ostream& stream) {
 		for(uint32_t i = 0; i < KeyLength; ++i) stream << std::hex << (int)this->key[i];
 		stream << '\t';
 		for(uint32_t i = 0; i < IVLength; ++i) stream << std::hex << (int)this->iv[i];
@@ -172,7 +172,7 @@ public:
 		return(stream);
 	}
 
-	yon_buffer_t& AddToBuffer(yon_buffer_t& buffer) const{
+	yon_buffer_t& AddToBuffer(yon_buffer_t& buffer) const {
 		buffer += this->encryption_type;
 		buffer += this->field_id;
 		buffer.Add((const char*)&this->key[0], KeyLength);
@@ -181,7 +181,7 @@ public:
 		return(buffer);
 	}
 
-	std::ostream& WriteToStream(std::ostream& stream) const{
+	std::ostream& WriteToStream(std::ostream& stream) const {
 		stream.write(reinterpret_cast<const char*>(&this->encryption_type), sizeof(uint8_t));
 		stream.write(reinterpret_cast<const char*>(&this->field_id), sizeof(uint64_t));
 		stream.write((const char*)&this->key[0], KeyLength);
@@ -190,7 +190,7 @@ public:
 		return(stream);
 	}
 
-	std::istream& ReadFromStream(std::istream& stream){
+	std::istream& ReadFromStream(std::istream& stream) {
 		//stream.read(reinterpret_cast<char*>(&key.encryption_type), sizeof(uint8_t));
 		stream.read(reinterpret_cast<char*>(&this->field_id), sizeof(uint64_t));
 		stream.read((char*)&this->key[0], KeyLength);
@@ -236,29 +236,29 @@ public:
     Keychain& operator+=(const self_type& other);
 
    	// Element access
-	inline reference at(const size_type& position){ return(this->entries_[position]); }
-	inline const_reference at(const size_type& position) const{ return(this->entries_[position]); }
-	inline reference operator[](const size_type& position){ return(this->entries_[position]); }
-	inline const_reference operator[](const size_type& position) const{ return(this->entries_[position]); }
-	inline pointer data(void){ return(this->entries_); }
-	inline const_pointer data(void) const{ return(this->entries_); }
-	inline reference front(void){ return(this->entries_[0]); }
-	inline const_reference front(void) const{ return(this->entries_[0]); }
-	inline reference back(void){ return(this->entries_[this->n_entries_ - 1]); }
-	inline const_reference back(void) const{ return(this->entries_[this->n_entries_ - 1]); }
+	inline reference at(const size_type& position) { return(this->entries_[position]); }
+	inline const_reference at(const size_type& position) const { return(this->entries_[position]); }
+	inline reference operator[](const size_type& position) { return(this->entries_[position]); }
+	inline const_reference operator[](const size_type& position) const { return(this->entries_[position]); }
+	inline pointer data(void) { return(this->entries_); }
+	inline const_pointer data(void) const { return(this->entries_); }
+	inline reference front(void) { return(this->entries_[0]); }
+	inline const_reference front(void) const { return(this->entries_[0]); }
+	inline reference back(void) { return(this->entries_[this->n_entries_ - 1]); }
+	inline const_reference back(void) const { return(this->entries_[this->n_entries_ - 1]); }
 
 	// Capacity
-	inline bool empty(void) const{ return(this->n_entries_ == 0); }
-	inline const size_type& size(void) const{ return(this->n_entries_); }
-	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
+	inline bool empty(void) const { return(this->n_entries_ == 0); }
+	inline const size_type& size(void) const { return(this->n_entries_); }
+	inline const size_type& capacity(void) const { return(this->n_capacity_); }
 
 	// Iterator
-	inline iterator begin(){ return iterator(&this->entries_[0]); }
-	inline iterator end(){ return iterator(&this->entries_[this->n_entries_]); }
-	inline const_iterator begin() const{ return const_iterator(&this->entries_[0]); }
-	inline const_iterator end() const{ return const_iterator(&this->entries_[this->n_entries_]); }
-	inline const_iterator cbegin() const{ return const_iterator(&this->entries_[0]); }
-	inline const_iterator cend() const{ return const_iterator(&this->entries_[this->n_entries_]); }
+	inline iterator begin() { return iterator(&this->entries_[0]); }
+	inline iterator end() { return iterator(&this->entries_[this->n_entries_]); }
+	inline const_iterator begin() const { return const_iterator(&this->entries_[0]); }
+	inline const_iterator end() const { return const_iterator(&this->entries_[this->n_entries_]); }
+	inline const_iterator cbegin() const { return const_iterator(&this->entries_[0]); }
+	inline const_iterator cend() const { return const_iterator(&this->entries_[this->n_entries_]); }
 
 	void operator+=(KeychainKey& keychain);
 

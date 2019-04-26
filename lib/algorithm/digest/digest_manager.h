@@ -41,10 +41,10 @@ public:
 		n_capacity_(other.n_capacity_),
 		__entries(new value_type[this->n_capacity_])
 	{
-		for(uint32_t i = 0; i < this->size(); ++i) this->__entries[i] = other.__entries[i];
+		for (uint32_t i = 0; i < this->size(); ++i) this->__entries[i] = other.__entries[i];
 	}
 
-	virtual ~DigestManager(){ delete [] this->__entries; }
+	virtual ~DigestManager() { delete [] this->__entries; }
 
 	class iterator{
 	private:
@@ -55,10 +55,10 @@ public:
 		iterator(pointer ptr) : ptr_(ptr) { }
 		void operator++() { ptr_++; }
 		void operator++(int junk) { ptr_++; }
-		reference operator*() const{ return *ptr_; }
-		pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
+		reference operator*() const { return *ptr_; }
+		pointer operator->() const { return ptr_; }
+		bool operator==(const self_type& rhs) const { return ptr_ == rhs.ptr_; }
+		bool operator!=(const self_type& rhs) const { return ptr_ != rhs.ptr_; }
 	private:
 		pointer ptr_;
 	};
@@ -72,56 +72,56 @@ public:
 		const_iterator(pointer ptr) : ptr_(ptr) { }
 		void operator++() { ptr_++; }
 		void operator++(int junk) { ptr_++; }
-		const_reference operator*() const{ return *ptr_; }
-		const_pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
+		const_reference operator*() const { return *ptr_; }
+		const_pointer operator->() const { return ptr_; }
+		bool operator==(const self_type& rhs) const { return ptr_ == rhs.ptr_; }
+		bool operator!=(const self_type& rhs) const { return ptr_ != rhs.ptr_; }
 	private:
 		pointer ptr_;
 	};
 
 	// Element access
-	inline reference at(const size_type& position){ return(this->__entries[position]); }
-	inline const_reference at(const size_type& position) const{ return(this->__entries[position]); }
-	inline reference operator[](const size_type& position){ return(this->__entries[position]); }
-	inline const_reference operator[](const size_type& position) const{ return(this->__entries[position]); }
-	inline pointer data(void){ return(this->__entries); }
-	inline const_pointer data(void) const{ return(this->__entries); }
-	inline reference front(void){ return(this->__entries[0]); }
-	inline const_reference front(void) const{ return(this->__entries[0]); }
-	inline reference back(void){ return(this->__entries[this->n_entries_ - 1]); }
-	inline const_reference back(void) const{ return(this->__entries[this->n_entries_ - 1]); }
+	inline reference at(const size_type& position) { return(this->__entries[position]); }
+	inline const_reference at(const size_type& position) const { return(this->__entries[position]); }
+	inline reference operator[](const size_type& position) { return(this->__entries[position]); }
+	inline const_reference operator[](const size_type& position) const { return(this->__entries[position]); }
+	inline pointer data(void) { return(this->__entries); }
+	inline const_pointer data(void) const { return(this->__entries); }
+	inline reference front(void) { return(this->__entries[0]); }
+	inline const_reference front(void) const { return(this->__entries[0]); }
+	inline reference back(void) { return(this->__entries[this->n_entries_ - 1]); }
+	inline const_reference back(void) const { return(this->__entries[this->n_entries_ - 1]); }
 
 	// Capacity
-	inline bool empty(void) const{ return(this->n_entries_ == 0); }
-	inline const size_type& size(void) const{ return(this->n_entries_); }
-	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
+	inline bool empty(void) const { return(this->n_entries_ == 0); }
+	inline const size_type& size(void) const { return(this->n_entries_); }
+	inline const size_type& capacity(void) const { return(this->n_capacity_); }
 
 	// Iterator
-	inline iterator begin(){ return iterator(&this->__entries[0]); }
-	inline iterator end(){ return iterator(&this->__entries[this->n_entries_]); }
-	inline const_iterator begin() const{ return const_iterator(&this->__entries[0]); }
-	inline const_iterator end() const{ return const_iterator(&this->__entries[this->n_entries_]); }
-	inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
-	inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries_]); }
+	inline iterator begin() { return iterator(&this->__entries[0]); }
+	inline iterator end() { return iterator(&this->__entries[this->n_entries_]); }
+	inline const_iterator begin() const { return const_iterator(&this->__entries[0]); }
+	inline const_iterator end() const { return const_iterator(&this->__entries[this->n_entries_]); }
+	inline const_iterator cbegin() const { return const_iterator(&this->__entries[0]); }
+	inline const_iterator cend() const { return const_iterator(&this->__entries[this->n_entries_]); }
 
-	void finalize(void){
-		for(uint32_t i = 0; i < this->size(); ++i) this->at(i).finalize();
+	void finalize(void) {
+		for (uint32_t i = 0; i < this->size(); ++i) this->at(i).finalize();
 	}
 
 private:
-	friend std::ostream& operator<<(std::ostream& out, const self_type& container){
+	friend std::ostream& operator<<(std::ostream& out, const self_type& container) {
 		out.write((const char* const)reinterpret_cast<const size_type* const>(&container.n_entries_), sizeof(size_type));
-		for(size_type i = 0; i < container.size(); ++i) out << container[i];
+		for (size_type i = 0; i < container.size(); ++i) out << container[i];
 
 		return(out);
 	}
 
-	friend std::ifstream& operator>>(std::ifstream& stream, self_type& container){
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& container) {
 		stream.read((char*)reinterpret_cast<size_type*>(&container.n_entries_), sizeof(size_type));
 		delete [] container.__entries;
 		container.__entries = new value_type[container.n_entries_];
-		for(size_type i = 0; i < container.size(); ++i) stream >> container[i];
+		for (size_type i = 0; i < container.size(); ++i) stream >> container[i];
 
 		return(stream);
 	}

@@ -46,8 +46,8 @@ public:
 	yon_vnt_hdr_t(const yon_vnt_hdr_t& other);
 	~yon_vnt_hdr_t() = default;
 
-	inline size_t GetNumberSamples(void) const{ return(this->samples_.size()); }
-	inline size_t GetNumberContigs(void) const{ return(this->contigs_.size()); }
+	inline size_t GetNumberSamples(void) const { return(this->samples_.size()); }
+	inline size_t GetNumberContigs(void) const { return(this->contigs_.size()); }
 
 	void AddSample(const std::string& sample_name);
 
@@ -76,7 +76,7 @@ public:
 	void AddGenotypeAnnotationFields(const std::vector<std::string>& group_names);
 
 	// Append a string to the literal string
-	inline void AppendLiteralString(const std::string& literal_addition){ this->literals_ += literal_addition; }
+	inline void AppendLiteralString(const std::string& literal_addition) { this->literals_ += literal_addition; }
 
 	// Print the literals and the column header.
 	std::ostream& PrintVcfHeader(std::ostream& stream) const;
@@ -153,14 +153,14 @@ public:
 	yon_ftr_t(const self_type& other);
 	~yon_ftr_t() = default;
 
-	inline const uint64_t& GetEODOffset(void) const{ return(this->offset_end_of_data); }
-	inline uint64_t& GetEODOffset(void){ return(this->offset_end_of_data); }
-	inline const uint64_t& GetNumberBlocks(void) const{ return(this->n_blocks); }
-	inline uint64_t& GetNumberBlocks(void){ return(this->n_blocks); }
-	inline const uint64_t& GetNumberVariants(void) const{ return(this->n_variants); }
-	inline uint64_t& GetNumberVariants(void){ return(this->n_variants); }
-	inline const uint16_t& GetController(void) const{ return(this->controller); }
-	inline uint16_t& GetController(void){ return(this->controller); }
+	inline const uint64_t& GetEODOffset(void) const { return(this->offset_end_of_data); }
+	inline uint64_t& GetEODOffset(void) { return(this->offset_end_of_data); }
+	inline const uint64_t& GetNumberBlocks(void) const { return(this->n_blocks); }
+	inline uint64_t& GetNumberBlocks(void) { return(this->n_blocks); }
+	inline const uint64_t& GetNumberVariants(void) const { return(this->n_variants); }
+	inline uint64_t& GetNumberVariants(void) { return(this->n_variants); }
+	inline const uint16_t& GetController(void) const { return(this->controller); }
+	inline uint16_t& GetController(void) { return(this->controller); }
 
 	bool Validate(void) const;
 

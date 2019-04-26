@@ -33,15 +33,15 @@ public:
 	~ChecksumContainer(void);
 
     // Element access
-    inline reference at(const size_type& position){ return(this->entries_[position]); }
+    inline reference at(const size_type& position) { return(this->entries_[position]); }
     inline const_reference at(const size_type& position) const{ return(this->entries_[position]); }
-    inline reference operator[](const size_type& position){ return(this->entries_[position]); }
+    inline reference operator[](const size_type& position) { return(this->entries_[position]); }
     inline const_reference operator[](const size_type& position) const{ return(this->entries_[position]); }
-    inline pointer data(void){ return(this->entries_); }
+    inline pointer data(void) { return(this->entries_); }
     inline const_pointer data(void) const{ return(this->entries_); }
-    inline reference front(void){ return(this->entries_[0]); }
+    inline reference front(void) { return(this->entries_[0]); }
     inline const_reference front(void) const{ return(this->entries_[0]); }
-    inline reference back(void){ return(this->entries_[this->n_entries - 1]); }
+    inline reference back(void) { return(this->entries_[this->n_entries - 1]); }
     inline const_reference back(void) const{ return(this->entries_[this->n_entries - 1]); }
 
     // Capacity
@@ -50,8 +50,8 @@ public:
     inline const size_type& capacity(void) const{ return(this->n_capacity); }
 
     // Iterator
-    inline iterator begin(){ return iterator(&this->entries_[0]); }
-    inline iterator end(){ return iterator(&this->entries_[this->n_entries]); }
+    inline iterator begin() { return iterator(&this->entries_[0]); }
+    inline iterator end() { return iterator(&this->entries_[this->n_entries]); }
     inline const_iterator begin() const{ return const_iterator(&this->entries_[0]); }
     inline const_iterator end() const{ return const_iterator(&this->entries_[this->n_entries]); }
     inline const_iterator cbegin() const{ return const_iterator(&this->entries_[0]); }

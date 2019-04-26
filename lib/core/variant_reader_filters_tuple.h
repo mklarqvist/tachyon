@@ -10,10 +10,10 @@ namespace tachyon{
 
 struct VariantReaderFiltersTupleInterface {
 public:
-	VariantReaderFiltersTupleInterface() : filter(false){}
-	VariantReaderFiltersTupleInterface(const bool filter) : filter(filter){}
-	VariantReaderFiltersTupleInterface(const VariantReaderFiltersTupleInterface& other) : filter(other.filter){}
-	virtual ~VariantReaderFiltersTupleInterface(){}
+	VariantReaderFiltersTupleInterface() : filter(false) {}
+	VariantReaderFiltersTupleInterface(const bool filter) : filter(filter) {}
+	VariantReaderFiltersTupleInterface(const VariantReaderFiltersTupleInterface& other) : filter(other.filter) {}
+	virtual ~VariantReaderFiltersTupleInterface() {}
 
 	// Not possible to have a templated pure virtual functionality
 	virtual bool applyFilter(const bool& l_value)  const =0;
@@ -59,7 +59,7 @@ public:
 		r_value(r_value),
 		comparator(nullptr)
 	{
-		switch(comparator){
+		switch(comparator) {
 		case(YON_CMP_GREATER):       this->comparator = &self_type::__filterGreater;      break;
 		case(YON_CMP_GREATER_EQUAL): this->comparator = &self_type::__filterGreaterEqual; break;
 		case(YON_CMP_LESS):          this->comparator = &self_type::__filterLesser;       break;
@@ -79,16 +79,16 @@ public:
 		comparator(other.comparator)
 	{}
 
-	void operator()(const ValueClass& r_value){
+	void operator()(const ValueClass& r_value) {
 		this->filter = true;
 		this->r_value = r_value;
 	}
 
-	void operator()(const ValueClass& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+	void operator()(const ValueClass& r_value, const TACHYON_COMPARATOR_TYPE& comparator) {
 		this->filter  = true;
 		this->r_value = r_value;
 
-		switch(comparator){
+		switch(comparator) {
 		case(YON_CMP_GREATER):       this->comparator = &self_type::__filterGreater;      break;
 		case(YON_CMP_GREATER_EQUAL): this->comparator = &self_type::__filterGreaterEqual; break;
 		case(YON_CMP_LESS):          this->comparator = &self_type::__filterLesser;       break;
@@ -105,26 +105,26 @@ public:
 
 	~VariantReaderFiltersTuple() = default;
 
-	inline bool applyFilter(const bool& l_value)  const{ return((this->*comparator)(l_value, r_value)); }
-	inline bool applyFilter(const uint8_t& l_value)  const{ return((this->*comparator)(l_value, r_value)); }
-	inline bool applyFilter(const uint16_t& l_value)   const{ return((this->*comparator)(l_value, r_value)); }
-	inline bool applyFilter(const uint32_t& l_value)   const{ return((this->*comparator)(l_value, r_value)); }
-	inline bool applyFilter(const uint64_t& l_value)   const{ return((this->*comparator)(l_value, r_value)); }
-	inline bool applyFilter(const int8_t& l_value) const{ return((this->*comparator)(l_value, r_value)); }
-	inline bool applyFilter(const int16_t& l_value)   const{ return((this->*comparator)(l_value, r_value)); }
-	inline bool applyFilter(const int32_t& l_value)   const{ return((this->*comparator)(l_value, r_value)); }
-	inline bool applyFilter(const int64_t& l_value)   const{ return((this->*comparator)(l_value, r_value)); }
-	inline bool applyFilter(const float& l_value) const{ return((this->*comparator)(l_value, r_value)); }
-	inline bool applyFilter(const double& l_value)const{ return((this->*comparator)(l_value, r_value)); }
-	inline bool applyFilter(const std::string& l_value) const{ return(false); }
+	inline bool applyFilter(const bool& l_value)  const { return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const uint8_t& l_value)  const { return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const uint16_t& l_value)   const { return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const uint32_t& l_value)   const { return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const uint64_t& l_value)   const { return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const int8_t& l_value) const { return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const int16_t& l_value)   const { return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const int32_t& l_value)   const { return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const int64_t& l_value)   const { return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const float& l_value) const { return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const double& l_value)const { return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const std::string& l_value) const { return(false); }
 
 	// Comparator functions
-	inline bool __filterLesser(const ValueClass& target, const ValueClass& limit) const{return(target < limit);}
-	inline bool __filterLesserEqual(const ValueClass& target, const ValueClass& limit) const{return(target <= limit);}
-	inline bool __filterGreater(const ValueClass& target, const ValueClass& limit) const{return(target > limit);}
-	inline bool __filterGreaterEqual(const ValueClass& target, const ValueClass& limit) const{return(target >= limit);}
-	inline bool __filterEqual(const ValueClass& target, const ValueClass& limit) const{return(target == limit);}
-	inline bool __filterNotEqual(const ValueClass& target, const ValueClass& limit) const{return(target != limit);}
+	inline bool __filterLesser(const ValueClass& target, const ValueClass& limit) const {return(target < limit);}
+	inline bool __filterLesserEqual(const ValueClass& target, const ValueClass& limit) const {return(target <= limit);}
+	inline bool __filterGreater(const ValueClass& target, const ValueClass& limit) const {return(target > limit);}
+	inline bool __filterGreaterEqual(const ValueClass& target, const ValueClass& limit) const {return(target >= limit);}
+	inline bool __filterEqual(const ValueClass& target, const ValueClass& limit) const {return(target == limit);}
+	inline bool __filterNotEqual(const ValueClass& target, const ValueClass& limit) const {return(target != limit);}
 
 public:
 	ValueClass      r_value;
@@ -155,7 +155,7 @@ public:
 		r_value_regex(std::regex(r_value)),
 		comparator(nullptr)
 	{
-		switch(comparator){
+		switch(comparator) {
 		case(YON_CMP_GREATER):       this->comparator = &self_type::__filterGreater;      break;
 		case(YON_CMP_GREATER_EQUAL): this->comparator = &self_type::__filterGreaterEqual; break;
 		case(YON_CMP_LESS):          this->comparator = &self_type::__filterLesser;       break;
@@ -173,18 +173,18 @@ public:
 		comparator(other.comparator)
 	{}
 
-	void operator()(const std::string& r_value){
+	void operator()(const std::string& r_value) {
 		this->filter = true;
 		this->r_value = r_value;
 		this->r_value_regex = std::regex(r_value);
 	}
 
-	void operator()(const std::string& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+	void operator()(const std::string& r_value, const TACHYON_COMPARATOR_TYPE& comparator) {
 		this->filter  = true;
 		this->r_value = r_value;
 		this->r_value_regex = std::regex(r_value);
 
-		switch(comparator){
+		switch(comparator) {
 		case(YON_CMP_GREATER):       this->comparator = &self_type::__filterGreater;      break;
 		case(YON_CMP_GREATER_EQUAL): this->comparator = &self_type::__filterGreaterEqual; break;
 		case(YON_CMP_LESS):          this->comparator = &self_type::__filterLesser;       break;
@@ -197,28 +197,28 @@ public:
 
 	~VariantReaderFiltersTuple() = default;
 
-	inline bool applyFilter(const bool& l_value)  const{ return false; }
-	inline bool applyFilter(const uint8_t& l_value)  const{ return false; }
-	inline bool applyFilter(const uint16_t& l_value)   const{ return false; }
-	inline bool applyFilter(const uint32_t& l_value)   const{ return false; }
-	inline bool applyFilter(const uint64_t& l_value)   const{ return false; }
-	inline bool applyFilter(const int8_t& l_value) const{ return false; }
-	inline bool applyFilter(const int16_t& l_value)   const{ return false; }
-	inline bool applyFilter(const int32_t& l_value)   const{ return false; }
-	inline bool applyFilter(const int64_t& l_value)   const{ return false; }
-	inline bool applyFilter(const float& l_value) const{ return false; }
-	inline bool applyFilter(const double& l_value)const{ return false; }
-	inline bool applyFilter(const std::string& l_value) const{ return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const bool& l_value)  const { return false; }
+	inline bool applyFilter(const uint8_t& l_value)  const { return false; }
+	inline bool applyFilter(const uint16_t& l_value)   const { return false; }
+	inline bool applyFilter(const uint32_t& l_value)   const { return false; }
+	inline bool applyFilter(const uint64_t& l_value)   const { return false; }
+	inline bool applyFilter(const int8_t& l_value) const { return false; }
+	inline bool applyFilter(const int16_t& l_value)   const { return false; }
+	inline bool applyFilter(const int32_t& l_value)   const { return false; }
+	inline bool applyFilter(const int64_t& l_value)   const { return false; }
+	inline bool applyFilter(const float& l_value) const { return false; }
+	inline bool applyFilter(const double& l_value)const { return false; }
+	inline bool applyFilter(const std::string& l_value) const { return((this->*comparator)(l_value, r_value)); }
 
 	// Comparator functions
-	inline bool __filterLesser(const std::string& target, const std::string& limit) const{return(target.size() < limit.size());}
-	inline bool __filterLesserEqual(const std::string& target, const std::string& limit) const{return(target.size() <= limit.size());}
-	inline bool __filterGreater(const std::string& target, const std::string& limit) const{return(target.size() > limit.size());}
-	inline bool __filterGreaterEqual(const std::string& target, const std::string& limit) const{return(target.size() >= limit.size());}
-	inline bool __filterEqual(const std::string& target, const std::string& limit) const{return(target == limit);}
-	inline bool __filterNotEqual(const std::string& target, const std::string& limit) const{return(target != limit);}
+	inline bool __filterLesser(const std::string& target, const std::string& limit) const {return(target.size() < limit.size());}
+	inline bool __filterLesserEqual(const std::string& target, const std::string& limit) const {return(target.size() <= limit.size());}
+	inline bool __filterGreater(const std::string& target, const std::string& limit) const {return(target.size() > limit.size());}
+	inline bool __filterGreaterEqual(const std::string& target, const std::string& limit) const {return(target.size() >= limit.size());}
+	inline bool __filterEqual(const std::string& target, const std::string& limit) const {return(target == limit);}
+	inline bool __filterNotEqual(const std::string& target, const std::string& limit) const {return(target != limit);}
 
-	inline bool __filterRegex(const std::string& target, const std::string& limit) const{
+	inline bool __filterRegex(const std::string& target, const std::string& limit) const {
 		return(std::regex_search(target, this->r_value_regex, std::regex_constants::match_any));
 	}
 

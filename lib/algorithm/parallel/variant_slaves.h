@@ -12,16 +12,16 @@
 namespace tachyon {
 
 struct yon_pool_vblock_payload {
-	yon_pool_vblock_payload() : block_id(0), c(nullptr){}
-	yon_pool_vblock_payload(const uint32_t bid, yon1_vb_t* vc) : block_id(bid), c(vc){}
-	~yon_pool_vblock_payload(){ delete c; }
+	yon_pool_vblock_payload() : block_id(0), c(nullptr) {}
+	yon_pool_vblock_payload(const uint32_t bid, yon1_vb_t* vc) : block_id(bid), c(vc) {}
+	~yon_pool_vblock_payload() { delete c; }
 	yon_pool_vblock_payload(const yon_pool_vblock_payload& other) = delete; // copy is not allowed
 	yon_pool_vblock_payload& operator=(const yon_pool_vblock_payload& other) = delete; // copy assign is not allowed
-	yon_pool_vblock_payload(yon_pool_vblock_payload&& other) noexcept : block_id(other.block_id), c(nullptr){
+	yon_pool_vblock_payload(yon_pool_vblock_payload&& other) noexcept : block_id(other.block_id), c(nullptr) {
 		std::swap(this->c, other.c);
 	}
 	yon_pool_vblock_payload& operator=(yon_pool_vblock_payload&& other) noexcept{
-		if(this == &other) return(*this);
+		if (this == &other) return(*this);
 
 		this->block_id = other.block_id;
 		delete this->c;
@@ -64,7 +64,7 @@ public:
 	}
 
 	yon_pool_vblock& operator=(yon_pool_vblock&& other) noexcept {
-		if(this == &other){ return(*this); }
+		if (this == &other) { return(*this); }
 		delete [] this->c;
 		this->c = nullptr;
 		this->n_capacity = other.n_capacity;
@@ -76,7 +76,7 @@ public:
 		return(*this);
 	}
 
-	~yon_pool_vblock(){
+	~yon_pool_vblock() {
 		delete [] this->c;
 	}
 
@@ -85,18 +85,18 @@ public:
 	 * wait until an item has been popped.
 	 * @param data Input pointer to payload.
 	 */
-	void emplace(yon_pool_vblock_payload* data){
+	void emplace(yon_pool_vblock_payload* data) {
 		std::unique_lock<std::mutex> l(lock);
 
-		this->not_full.wait(l, [this](){
+		this->not_full.wait(l, [this]() {
 			// Exit condition to be triggered if the alive predicate
 			// starts to evaluate as FALSE.
-			if(this->n_c == 0 && this->alive == false) return true;
+			if (this->n_c == 0 && this->alive == false) return true;
 			return this->n_c != this->n_capacity;
 		});
 
 		// Exit condition when alive predicate evaluates as FALSE.
-		if(this->n_c == 0 && this->alive == false){
+		if (this->n_c == 0 && this->alive == false) {
 			l.unlock();
 			this->not_full.notify_all(); // flush
 			this->not_empty.notify_all(); // flush
@@ -116,18 +116,18 @@ public:
 	 * If the queue is empty * then wait until an item has been inserted.
 	 * @return Returns a pointer to the retrieved payload or a nullpointer in the special case the producer operations has finished.
 	 */
-	yon_pool_vblock_payload* pop(void){
+	yon_pool_vblock_payload* pop(void) {
 		std::unique_lock<std::mutex> l(lock);
 
-		this->not_empty.wait(l, [this](){
+		this->not_empty.wait(l, [this]() {
 			// Exit condition to be triggered if the alive predicate
 			// starts to evaluate as FALSE.
-			if(this->n_c == 0 && this->alive == false) return true;
+			if (this->n_c == 0 && this->alive == false) return true;
 			return this->n_c != 0;
 		});
 
 		// Exit condition when alive predicate evaluates as FALSE.
-		if(this->n_c == 0){
+		if (this->n_c == 0) {
 			l.unlock();
 			this->not_empty.notify_all();
 			this->not_full.notify_all();
@@ -176,7 +176,7 @@ public:
 		dst_block_(nullptr)
 	{}
 
-	virtual ~yon_producer_vblock_interface(){}
+	virtual ~yon_producer_vblock_interface() {}
 	virtual std::thread& Start(void) =0;
 
 public:
@@ -205,9 +205,9 @@ public:
 		instance_(nullptr)
 	{}
 
-	~yon_producer_vblock(){}
+	~yon_producer_vblock() {}
 
-	std::thread& Start(void){
+	std::thread& Start(void) {
 		this->thread_ = std::thread(&yon_producer_vblock::Produce, this);
 		return(this->thread_);
 	}
@@ -232,12 +232,12 @@ private:
 	 * consumers to retrieve. Continues until no more data is available.
 	 * @return Returns TRUE if successful or FALSE otherwise.
 	 */
-	bool Produce(void){
+	bool Produce(void) {
 		uint32_t n_blocks = 0;
 		this->data_available  = true;
 		this->data_pool.alive = true;
-		while(true){
-			if((*this->instance_.*this->func_)() == false){
+		while(true) {
+			if ((*this->instance_.*this->func_)() == false) {
 				// No more data is available or an error was seen.
 				// Trigger shared resources flag alive to no longer
 				// evaluate as true. This triggers the exit condition
@@ -248,7 +248,7 @@ private:
 				// Keep flushing until the predicate for all_finished
 				// evaluates TRUE. This occurs after all consumer threads
 				// have been joined.
-				while(data_pool.n_c && all_finished == false){
+				while(data_pool.n_c && all_finished == false) {
 					data_pool.not_empty.notify_all();
 					data_pool.not_full.notify_all();
 				}
@@ -282,14 +282,14 @@ public:
 template <class T, class F = bool(T::*)(yon1_vb_t*&)>
 struct yon_consumer_vblock {
 public:
-	yon_consumer_vblock(void) : n_rcds_processed(0), thread_id(0), data_available(nullptr), data_pool(nullptr), instance_(nullptr){}
+	yon_consumer_vblock(void) : n_rcds_processed(0), thread_id(0), data_available(nullptr), data_pool(nullptr), instance_(nullptr) {}
 	yon_consumer_vblock(uint32_t thread_id, std::atomic<bool>& data_available, yon_pool_vblock& data_pool) :
 		n_rcds_processed(0), thread_id(thread_id), data_available(&data_available), data_pool(&data_pool), instance_(nullptr)
 	{}
 
-	~yon_consumer_vblock(){}
+	~yon_consumer_vblock() {}
 
-	yon_consumer_vblock& operator+=(const yon_consumer_vblock& other){
+	yon_consumer_vblock& operator+=(const yon_consumer_vblock& other) {
 		this->n_rcds_processed += other.n_rcds_processed;
 		return(*this);
 	}
@@ -315,11 +315,11 @@ private:
 	 * writer to be written to a byte stream.
 	 * @return Returns TRUE upon success or FALSE oterhwise.
 	 */
-	bool Consume(void){
+	bool Consume(void) {
 
 		// Continue to consume data until there is no more
 		// or an exit condition has been triggered.
-		while(data_available){
+		while(data_available) {
 			// Pop a Vcf container payload from the shared
 			// resource pool.
 			yon_pool_vblock_payload* d = data_pool->pop();
@@ -328,13 +328,13 @@ private:
 			// condition has been triggered. If this is the
 			// case we discontinue the consumption for this
 			// consumer.
-			if(d == nullptr){
+			if (d == nullptr) {
 				break;
 			}
 			assert(d->c != nullptr);
 
 			// Invoke consumer function of interest
-			if((*this->instance_.*this->func_)(d->c) == false){
+			if ((*this->instance_.*this->func_)(d->c) == false) {
 				std::cerr << "error occurred" << std::endl;
 			}
 

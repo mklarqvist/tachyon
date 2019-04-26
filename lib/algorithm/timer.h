@@ -8,29 +8,29 @@ namespace algorithm{
 
 class Timer {
 public:
-	explicit Timer(){}
+	explicit Timer() {}
 
-	void Start(void){ this->_start = std::chrono::high_resolution_clock::now(); }
+	void Start(void) { this->_start = std::chrono::high_resolution_clock::now(); }
 
-	std::chrono::duration<double> Elapsed() const{
+	std::chrono::duration<double> Elapsed() const {
 		return std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - this->_start);
 	}
 
 	template <typename T, typename Traits>
-	friend std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits>& out, const Timer& timer){
+	friend std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits>& out, const Timer& timer) {
 		return out << timer.Elapsed().count();
 	}
 
-	std::string ElapsedString(void){ return this->SecondsToTimestring(this->Elapsed().count()); }
+	std::string ElapsedString(void) { return this->SecondsToTimestring(this->Elapsed().count()); }
 
 private:
-	std::string SecondsToTimestring(const double seconds){
+	std::string SecondsToTimestring(const double seconds) {
 		const int32_t hours     = ((int32_t)seconds / 60 / 60);
 		const int32_t minutes   = ((int32_t)seconds / 60) % 60;
 		const int32_t sec       = (int32_t)seconds % 60;
 		const int32_t remainder = (seconds - (int32_t)seconds)*1000;
 
-		if(hours > 0){
+		if (hours > 0) {
 			sprintf(&this->buffer[0], "%02uh%02um%02u,%03us",
 					hours,
 					minutes,
@@ -38,7 +38,7 @@ private:
 					remainder);
 
 			return(std::string(&this->buffer[0], 13));
-		} else if(minutes > 0){
+		} else if (minutes > 0) {
 			sprintf(&this->buffer[0], "%02um%02u,%03us",
 					minutes,
 					sec,

@@ -79,8 +79,8 @@ public:
 	virtual void resize(void) =0;
 	virtual void resize(const size_t new_size) =0;
 
-	inline void operator++(void){ ++this->n_entries_; }
-	void operator--(void){ if(this->n_entries_ != 0) --this->n_entries_; }
+	inline void operator++(void) { ++this->n_entries_; }
+	void operator--(void) { if (this->n_entries_ != 0) --this->n_entries_; }
 
 	/**<
 	 * Overloaded += functions for adding new data to a
@@ -132,10 +132,10 @@ public:
 	virtual yon1_dc_t& UpdateDataContainer(yon1_dc_t& container, const bool update_stride) =0;
 
 	// Capacity
-	inline bool empty(void) const{ return(this->n_entries_ == 0); }
-	inline const size_type& size(void) const{ return(this->n_entries_); }
-	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
-	inline bool IsUniform(void) const{ return(this->is_uniform_); }
+	inline bool empty(void) const { return(this->n_entries_ == 0); }
+	inline const size_type& size(void) const { return(this->n_entries_); }
+	inline const size_type& capacity(void) const { return(this->n_capacity_); }
+	inline bool IsUniform(void) const { return(this->is_uniform_); }
 
 	/**<
 	 * Convert the data in a given PrimitiveContainer to valid Vcf
@@ -204,7 +204,7 @@ public:
     PrimitiveContainer& operator=(self_type&& other) noexcept;
     ~PrimitiveContainer(void);
 
-    inline PrimitiveContainerInterface* Clone(){ return(new self_type(*this)); }
+    inline PrimitiveContainerInterface* Clone() { return(new self_type(*this)); }
 
     PrimitiveContainerInterface* Move(void);
 
@@ -229,29 +229,29 @@ public:
 	yon1_dc_t& UpdateDataContainer(yon1_dc_t& container, const bool update_stride = true);
 	void ExpandEmpty(const uint32_t to);
 
-	inline uint8_t GetWordWidth(void){ return(sizeof(return_type)); }
+	inline uint8_t GetWordWidth(void) { return(sizeof(return_type)); }
 
     // Element access
-    inline reference at(const size_type& position){ return(this->entries_[position]); }
-    inline const_reference at(const size_type& position) const{ return(this->entries_[position]); }
-    inline reference operator[](const size_type& position){ return(this->entries_[position]); }
-    inline const_reference operator[](const size_type& position) const{ return(this->entries_[position]); }
-    inline pointer data(void){ return(this->entries_); }
-    inline const_pointer data(void) const{ return(this->entries_); }
-    inline reference front(void){ return(this->entries_[0]); }
-    inline const_reference front(void) const{ return(this->entries_[0]); }
-    inline reference back(void){ return(this->entries_[this->n_entries_ - 1]); }
-    inline const_reference back(void) const{ return(this->entries_[this->n_entries_ - 1]); }
+    inline reference at(const size_type& position) { return(this->entries_[position]); }
+    inline const_reference at(const size_type& position) const { return(this->entries_[position]); }
+    inline reference operator[](const size_type& position) { return(this->entries_[position]); }
+    inline const_reference operator[](const size_type& position) const { return(this->entries_[position]); }
+    inline pointer data(void) { return(this->entries_); }
+    inline const_pointer data(void) const { return(this->entries_); }
+    inline reference front(void) { return(this->entries_[0]); }
+    inline const_reference front(void) const { return(this->entries_[0]); }
+    inline reference back(void) { return(this->entries_[this->n_entries_ - 1]); }
+    inline const_reference back(void) const { return(this->entries_[this->n_entries_ - 1]); }
 
     // Iterator
-    inline iterator begin(){ return iterator(&this->entries_[0]); }
-    inline iterator end(){ return iterator(&this->entries_[this->n_entries_]); }
-    inline const_iterator begin() const{ return const_iterator(&this->entries_[0]); }
-    inline const_iterator end() const{ return const_iterator(&this->entries_[this->n_entries_]); }
-    inline const_iterator cbegin() const{ return const_iterator(&this->entries_[0]); }
-    inline const_iterator cend() const{ return const_iterator(&this->entries_[this->n_entries_]); }
+    inline iterator begin() { return iterator(&this->entries_[0]); }
+    inline iterator end() { return iterator(&this->entries_[this->n_entries_]); }
+    inline const_iterator begin() const { return const_iterator(&this->entries_[0]); }
+    inline const_iterator end() const { return const_iterator(&this->entries_[this->n_entries_]); }
+    inline const_iterator cbegin() const { return const_iterator(&this->entries_[0]); }
+    inline const_iterator cend() const { return const_iterator(&this->entries_[this->n_entries_]); }
 
-    inline yon_buffer_t& ToVcfString(yon_buffer_t& buffer) const{
+    inline yon_buffer_t& ToVcfString(yon_buffer_t& buffer) const {
     	return(utility::ToVcfString(buffer, this->data(), this->size()));
     }
 
@@ -296,43 +296,43 @@ public:
 	PrimitiveContainer& operator=(const PrimitiveContainer& other);
 	~PrimitiveContainer(void);
 
-	inline PrimitiveContainerInterface* Clone(){ return(new self_type(*this)); }
+	inline PrimitiveContainerInterface* Clone() { return(new self_type(*this)); }
 	PrimitiveContainerInterface* Move(void);
 	void ExpandEmpty(const uint32_t to);
 
-	inline uint8_t GetWordWidth(void){ return(sizeof(char)); }
+	inline uint8_t GetWordWidth(void) { return(sizeof(char)); }
 
-	inline void resize(void){}
-	inline void resize(const size_t new_size){}
+	inline void resize(void) {}
+	inline void resize(const size_t new_size) {}
 
-	inline void operator+=(const int8_t entry){ this->data_ += std::to_string(entry); }
-	inline void operator+=(const int16_t entry){ this->data_ += std::to_string(entry); }
-	inline void operator+=(const int32_t entry){ this->data_ += std::to_string(entry); }
-	inline void operator+=(const int64_t entry){ this->data_ += std::to_string(entry); }
-	inline void operator+=(const uint8_t entry){ this->data_ += std::to_string(entry); };
-	inline void operator+=(const uint16_t entry){ this->data_ += std::to_string(entry); }
-	inline void operator+=(const uint32_t entry){ this->data_ += std::to_string(entry); }
-	inline void operator+=(const uint64_t entry){ this->data_ += std::to_string(entry); }
-	inline void operator+=(const char entry){ this->data_ += std::to_string(entry); }
-	inline void operator+=(const float entry){ this->data_ += std::to_string(entry); }
-	inline void operator+=(const double entry){ this->data_ += std::to_string(entry); }
-	inline void operator+=(const std::string& entry){ this->data_ += entry; }
+	inline void operator+=(const int8_t entry) { this->data_ += std::to_string(entry); }
+	inline void operator+=(const int16_t entry) { this->data_ += std::to_string(entry); }
+	inline void operator+=(const int32_t entry) { this->data_ += std::to_string(entry); }
+	inline void operator+=(const int64_t entry) { this->data_ += std::to_string(entry); }
+	inline void operator+=(const uint8_t entry) { this->data_ += std::to_string(entry); };
+	inline void operator+=(const uint16_t entry) { this->data_ += std::to_string(entry); }
+	inline void operator+=(const uint32_t entry) { this->data_ += std::to_string(entry); }
+	inline void operator+=(const uint64_t entry) { this->data_ += std::to_string(entry); }
+	inline void operator+=(const char entry) { this->data_ += std::to_string(entry); }
+	inline void operator+=(const float entry) { this->data_ += std::to_string(entry); }
+	inline void operator+=(const double entry) { this->data_ += std::to_string(entry); }
+	inline void operator+=(const std::string& entry) { this->data_ += entry; }
 
 	yon1_dc_t ToDataContainer(void);
 	yon1_dc_t& UpdateDataContainer(yon1_dc_t& container, const bool update_stride = true);
 
 	// Element access
-	inline pointer data(void){ return(&this->data_); }
-	inline const_pointer data(void) const{ return(&this->data_); }
-	const bool empty(void) const{ return(this->data_.size() == 0); }
+	inline pointer data(void) { return(&this->data_); }
+	inline const_pointer data(void) const { return(&this->data_); }
+	const bool empty(void) const { return(this->data_.size() == 0); }
 
 	 // Iterator
-	inline iterator begin(){ return iterator(&this->data_); }
-	inline iterator end(){ return iterator(&this->data_ + this->n_entries_); }
-	inline const_iterator begin() const{ return const_iterator(&this->data_); }
-	inline const_iterator end() const{ return const_iterator(&this->data_ + this->n_entries_); }
-	inline const_iterator cbegin() const{ return const_iterator(&this->data_); }
-	inline const_iterator cend() const{ return const_iterator(&this->data_ + this->n_entries_); }
+	inline iterator begin() { return iterator(&this->data_); }
+	inline iterator end() { return iterator(&this->data_ + this->n_entries_); }
+	inline const_iterator begin() const { return const_iterator(&this->data_); }
+	inline const_iterator end() const { return const_iterator(&this->data_ + this->n_entries_); }
+	inline const_iterator cbegin() const { return const_iterator(&this->data_); }
+	inline const_iterator cend() const { return const_iterator(&this->data_ + this->n_entries_); }
 
 	yon_buffer_t& ToVcfString(yon_buffer_t& buffer) const;
 
@@ -431,8 +431,8 @@ public:
 	virtual bcf1_t* UpdateHtslibVcfRecordFormatString(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const =0;
 
 	// Capacity
-	inline bool empty(void) const{ return(this->n_objects_ == 0); }
-	inline const size_type& size(void) const{ return(this->n_objects_); }
+	inline bool empty(void) const { return(this->n_objects_ == 0); }
+	inline const size_type& size(void) const { return(this->n_objects_); }
 
 public:
 	size_type n_capacity_;
@@ -464,7 +464,7 @@ public:
 	                        const uint32_t strides_each);
     ~PrimitiveGroupContainer(void);
 
-    inline PrimitiveGroupContainerInterface* Clone(){ return(new self_type(*this)); }
+    inline PrimitiveGroupContainerInterface* Clone() { return(new self_type(*this)); }
 
     PrimitiveGroupContainerInterface* Move(void);
 
@@ -475,26 +475,26 @@ public:
 	void resize(const size_t new_size);
 
 	// Element access
-	inline reference at(const size_type& position){ return(this->containers_[position]); }
-	inline const_reference at(const size_type& position) const{ return(this->containers_[position]); }
-	inline reference operator[](const size_type& position){ return(this->containers_[position]); }
-	inline const_reference operator[](const size_type& position) const{ return(this->containers_[position]); }
-	inline pointer data(void){ return(this->containers_); }
-	inline const_pointer data(void) const{ return(this->containers_); }
-	inline reference front(void){ return(this->containers_[0]); }
-	inline const_reference front(void) const{ return(this->containers_[0]); }
-	inline reference back(void){ return(this->containers_[this->n_objects_ - 1]); }
-	inline const_reference back(void) const{ return(this->containers_[this->n_objects_ - 1]); }
+	inline reference at(const size_type& position) { return(this->containers_[position]); }
+	inline const_reference at(const size_type& position) const { return(this->containers_[position]); }
+	inline reference operator[](const size_type& position) { return(this->containers_[position]); }
+	inline const_reference operator[](const size_type& position) const { return(this->containers_[position]); }
+	inline pointer data(void) { return(this->containers_); }
+	inline const_pointer data(void) const { return(this->containers_); }
+	inline reference front(void) { return(this->containers_[0]); }
+	inline const_reference front(void) const { return(this->containers_[0]); }
+	inline reference back(void) { return(this->containers_[this->n_objects_ - 1]); }
+	inline const_reference back(void) const { return(this->containers_[this->n_objects_ - 1]); }
 
 	// Iterator
-	inline iterator begin(){ return iterator(&this->containers_[0]); }
-	inline iterator end(){ return iterator(&this->containers_[this->n_objects_]); }
-	inline const_iterator begin() const{ return const_iterator(&this->containers_[0]); }
-	inline const_iterator end() const{ return const_iterator(&this->containers_[this->n_objects_]); }
-	inline const_iterator cbegin() const{ return const_iterator(&this->containers_[0]); }
-	inline const_iterator cend() const{ return const_iterator(&this->containers_[this->n_objects_]); }
+	inline iterator begin() { return iterator(&this->containers_[0]); }
+	inline iterator end() { return iterator(&this->containers_[this->n_objects_]); }
+	inline const_iterator begin() const { return const_iterator(&this->containers_[0]); }
+	inline const_iterator end() const { return const_iterator(&this->containers_[this->n_objects_]); }
+	inline const_iterator cbegin() const { return const_iterator(&this->containers_[0]); }
+	inline const_iterator cend() const { return const_iterator(&this->containers_[this->n_objects_]); }
 
-	inline yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const uint64_t position) const{
+	inline yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const uint64_t position) const {
 		return(utility::ToVcfString(buffer, this->at(position).data(), this->at(position).size()));
 	}
 
@@ -538,7 +538,7 @@ public:
 	                        const uint32_t strides_each);
     ~PrimitiveGroupContainer(void);
 
-    inline PrimitiveGroupContainerInterface* Clone(){ return(new self_type(*this)); }
+    inline PrimitiveGroupContainerInterface* Clone() { return(new self_type(*this)); }
 
 	PrimitiveGroupContainerInterface* Move(void);
 	uint32_t BalanceVector(void);
@@ -549,38 +549,38 @@ public:
 	void resize(const size_t new_size);
 
 	// Element access
-	inline reference at(const size_type& position){ return(this->containers_[position]); }
-	inline const_reference at(const size_type& position) const{ return(this->containers_[position]); }
-	inline reference operator[](const size_type& position){ return(this->containers_[position]); }
-	inline const_reference operator[](const size_type& position) const{ return(this->containers_[position]); }
-	inline pointer data(void){ return(this->containers_); }
-	inline const_pointer data(void) const{ return(this->containers_); }
-	inline reference front(void){ return(this->containers_[0]); }
-	inline const_reference front(void) const{ return(this->containers_[0]); }
-	inline reference back(void){ return(this->containers_[this->n_objects_ - 1]); }
-	inline const_reference back(void) const{ return(this->containers_[this->n_objects_ - 1]); }
+	inline reference at(const size_type& position) { return(this->containers_[position]); }
+	inline const_reference at(const size_type& position) const { return(this->containers_[position]); }
+	inline reference operator[](const size_type& position) { return(this->containers_[position]); }
+	inline const_reference operator[](const size_type& position) const { return(this->containers_[position]); }
+	inline pointer data(void) { return(this->containers_); }
+	inline const_pointer data(void) const { return(this->containers_); }
+	inline reference front(void) { return(this->containers_[0]); }
+	inline const_reference front(void) const { return(this->containers_[0]); }
+	inline reference back(void) { return(this->containers_[this->n_objects_ - 1]); }
+	inline const_reference back(void) const { return(this->containers_[this->n_objects_ - 1]); }
 
 	// Capacity
-	inline bool empty(void) const{ return(this->n_objects_ == 0); }
-	inline const size_type& size(void) const{ return(this->n_objects_); }
+	inline bool empty(void) const { return(this->n_objects_ == 0); }
+	inline const size_type& size(void) const { return(this->n_objects_); }
 
 	// Iterator
-	inline iterator begin(){ return iterator(&this->containers_[0]); }
-	inline iterator end(){ return iterator(&this->containers_[this->n_objects_]); }
-	inline const_iterator begin() const{ return const_iterator(&this->containers_[0]); }
-	inline const_iterator end() const{ return const_iterator(&this->containers_[this->n_objects_]); }
-	inline const_iterator cbegin() const{ return const_iterator(&this->containers_[0]); }
-	inline const_iterator cend() const{ return const_iterator(&this->containers_[this->n_objects_]); }
+	inline iterator begin() { return iterator(&this->containers_[0]); }
+	inline iterator end() { return iterator(&this->containers_[this->n_objects_]); }
+	inline const_iterator begin() const { return const_iterator(&this->containers_[0]); }
+	inline const_iterator end() const { return const_iterator(&this->containers_[this->n_objects_]); }
+	inline const_iterator cbegin() const { return const_iterator(&this->containers_[0]); }
+	inline const_iterator cend() const { return const_iterator(&this->containers_[this->n_objects_]); }
 
-	inline yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const uint64_t position) const{
+	inline yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const uint64_t position) const {
 		return(this->at(position).ToVcfString(buffer));
 	}
 
-	inline bcf1_t* UpdateHtslibVcfRecordFormatInt32(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+	inline bcf1_t* UpdateHtslibVcfRecordFormatInt32(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const {
 		return(rec);
 	}
 
-	inline bcf1_t* UpdateHtslibVcfRecordFormatFloat(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+	inline bcf1_t* UpdateHtslibVcfRecordFormatFloat(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const {
 		return(rec);
 	}
 
@@ -616,7 +616,7 @@ template <class return_type>
 PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& container) :
 	entries_(nullptr)
 {
-	if(container.header.data_header.GetPrimitiveWidth() == -1)
+	if (container.header.data_header.GetPrimitiveWidth() == -1)
 		return;
 
 	assert(container.data_uncompressed.size() % container.header.data_header.GetPrimitiveWidth() == 0);
@@ -624,13 +624,13 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 	this->n_entries_ = container.data_uncompressed.size() / container.header.data_header.GetPrimitiveWidth();
 	this->entries_ = new value_type[this->n_entries_];
 
-	if(this->n_entries_ == 0)
+	if (this->n_entries_ == 0)
 		return;
 
 	this->is_uniform_ = container.header.data_header.IsUniform();
 
-	if(container.header.data_header.IsSigned()){
-		switch(container.header.data_header.GetPrimitiveType()){
+	if (container.header.data_header.IsSigned()) {
+		switch(container.header.data_header.GetPrimitiveType()) {
 		case(YON_TYPE_8B):     (this->SetupSigned<int8_t>(container,  0)); break;
 		case(YON_TYPE_16B):    (this->SetupSigned<int16_t>(container, 0)); break;
 		case(YON_TYPE_32B):    (this->SetupSigned<int32_t>(container, 0)); break;
@@ -646,7 +646,7 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 			return;
 		}
 	} else {
-		switch(container.header.data_header.GetPrimitiveType()){
+		switch(container.header.data_header.GetPrimitiveType()) {
 		case(YON_TYPE_8B):     (this->Setup<uint8_t>(container,  0)); break;
 		case(YON_TYPE_16B):    (this->Setup<uint16_t>(container, 0)); break;
 		case(YON_TYPE_32B):    (this->Setup<uint32_t>(container, 0)); break;
@@ -671,8 +671,8 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
     PrimitiveContainerInterface(false, n_entries),
 	entries_(new value_type[n_entries])
 {
-	if(container.header.data_header.IsSigned()){
-		switch(container.header.data_header.GetPrimitiveType()){
+	if (container.header.data_header.IsSigned()) {
+		switch(container.header.data_header.GetPrimitiveType()) {
 		case(YON_TYPE_8B):     (this->SetupSigned<int8_t>(container,  offset)); break;
 		case(YON_TYPE_16B):    (this->SetupSigned<int16_t>(container, offset)); break;
 		case(YON_TYPE_32B):    (this->SetupSigned<int32_t>(container, offset)); break;
@@ -686,7 +686,7 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 		default: std::cerr << utility::timestamp("ERROR") << "Disallowed: " << container.header.data_header.GetPrimitiveType() << std::endl; return;
 		}
 	} else {
-		switch(container.header.data_header.GetPrimitiveType()){
+		switch(container.header.data_header.GetPrimitiveType()) {
 		case(YON_TYPE_8B):     (this->Setup<uint8_t>(container,  offset)); break;
 		case(YON_TYPE_16B):    (this->Setup<uint16_t>(container, offset)); break;
 		case(YON_TYPE_32B):    (this->Setup<uint32_t>(container, offset)); break;
@@ -707,12 +707,12 @@ PrimitiveContainer<return_type>::PrimitiveContainer(return_type* values, const u
     PrimitiveContainerInterface(false, n_entries),
 	entries_(new value_type[n_entries])
 {
-	for(int i = 0; i < n_entries; ++i)
+	for (int i = 0; i < n_entries; ++i)
 		this->entries_[i] = values[i];
 }
 
 template <class return_type>
-PrimitiveContainer<return_type>::~PrimitiveContainer(void){
+PrimitiveContainer<return_type>::~PrimitiveContainer(void) {
 	delete [] this->entries_;
 }
 
@@ -733,7 +733,7 @@ PrimitiveContainer<return_type>::PrimitiveContainer(self_type&& other) noexcept 
 }
 
 template <class return_type>
-PrimitiveContainer<return_type>& PrimitiveContainer<return_type>::operator=(const self_type& other){
+PrimitiveContainer<return_type>& PrimitiveContainer<return_type>::operator=(const self_type& other) {
 	delete [] this->entries_;
 	this->is_uniform_ = other.is_uniform_;
 	this->n_entries_  = other.n_entries_;
@@ -745,7 +745,7 @@ PrimitiveContainer<return_type>& PrimitiveContainer<return_type>::operator=(cons
 
 template <class return_type>
 PrimitiveContainer<return_type>& PrimitiveContainer<return_type>::operator=(self_type&& other) noexcept{
-	if(this == &other){
+	if (this == &other) {
 		// precautions against self-moves
 		return *this;
 	}
@@ -760,29 +760,29 @@ PrimitiveContainer<return_type>& PrimitiveContainer<return_type>::operator=(self
 
 template <class return_type>
 template <class native_primitive>
-void PrimitiveContainer<return_type>::Setup(const container_type& container, const uint32_t& offset){
+void PrimitiveContainer<return_type>::Setup(const container_type& container, const uint32_t& offset) {
 	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.data_uncompressed.data()[offset]);
 
-	for(uint32_t i = 0; i < this->size(); ++i)
+	for (uint32_t i = 0; i < this->size(); ++i)
 		this->entries_[i] = data[i];
 }
 
 template <class return_type>
 template <class native_primitive>
-void PrimitiveContainer<return_type>::SetupSigned(const container_type& container, const uint32_t& offset){
+void PrimitiveContainer<return_type>::SetupSigned(const container_type& container, const uint32_t& offset) {
 	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.data_uncompressed.data()[offset]);
 
-	if(sizeof(native_primitive) == sizeof(return_type)){
+	if (sizeof(native_primitive) == sizeof(return_type)) {
 		return(this->Setup<native_primitive>(container, offset));
 	}
 	else {
-		for(uint32_t i = 0; i < this->size(); ++i){
+		for (uint32_t i = 0; i < this->size(); ++i) {
 			// If the data is missing in the native format.
-			if(data[i] == std::numeric_limits<native_primitive>::min()){
+			if (data[i] == std::numeric_limits<native_primitive>::min()) {
 				this->entries_[i] = std::numeric_limits<return_type>::min();
 			}
 			// If the data is EOV in the native format.
-			else if(data[i] == std::numeric_limits<native_primitive>::min() + 1){
+			else if (data[i] == std::numeric_limits<native_primitive>::min() + 1) {
 				this->entries_[i] = std::numeric_limits<return_type>::min() + 1;
 			}
 			else
@@ -792,7 +792,7 @@ void PrimitiveContainer<return_type>::SetupSigned(const container_type& containe
 }
 
 template <class return_type>
-PrimitiveContainerInterface* PrimitiveContainer<return_type>::Move(void){
+PrimitiveContainerInterface* PrimitiveContainer<return_type>::Move(void) {
 	self_type* o   = new self_type();
 	o->is_uniform_ = this->is_uniform_;
 	o->n_capacity_ = this->n_capacity_;
@@ -804,8 +804,8 @@ PrimitiveContainerInterface* PrimitiveContainer<return_type>::Move(void){
 }
 
 template <class return_type>
-yon1_dc_t PrimitiveContainer<return_type>::ToDataContainer(void){
-	if(this->size() == 0)
+yon1_dc_t PrimitiveContainer<return_type>::ToDataContainer(void) {
+	if (this->size() == 0)
 		return(yon1_dc_t());
 
 	yon1_dc_t d;
@@ -813,7 +813,7 @@ yon1_dc_t PrimitiveContainer<return_type>::ToDataContainer(void){
 	d.strides_uncompressed.resize(this->size()*sizeof(return_type) + 128);
 	d.header.data_header.stride = this->size();
 
-	for(uint32_t i = 0; i < this->size(); ++i) d.Add(this->at(i));
+	for (uint32_t i = 0; i < this->size(); ++i) d.Add(this->at(i));
 	d.AddStride(this->size());
 	++d;
 
@@ -821,37 +821,37 @@ yon1_dc_t PrimitiveContainer<return_type>::ToDataContainer(void){
 }
 
 template <class return_type>
-yon1_dc_t& PrimitiveContainer<return_type>::UpdateDataContainer(yon1_dc_t& container, const bool update_stride){
-	if(this->size() == 0)
+yon1_dc_t& PrimitiveContainer<return_type>::UpdateDataContainer(yon1_dc_t& container, const bool update_stride) {
+	if (this->size() == 0)
 		return(container);
 
-	if(container.data_uncompressed.size() + this->size()*sizeof(return_type) > container.data_uncompressed.capacity())
+	if (container.data_uncompressed.size() + this->size()*sizeof(return_type) > container.data_uncompressed.capacity())
 		container.data_uncompressed.resize((container.data_uncompressed.size()+this->size()*sizeof(return_type))*2);
 
-	for(uint32_t i = 0; i < this->size(); ++i)
+	for (uint32_t i = 0; i < this->size(); ++i)
 		container.Add(this->at(i));
 
-	if(update_stride) container.AddStride(this->size());
+	if (update_stride) container.AddStride(this->size());
 	++container;
 
 	return(container);
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::ExpandEmpty(const uint32_t to){
+void PrimitiveContainer<return_type>::ExpandEmpty(const uint32_t to) {
 	// Cannot resize into mixed stride with EOV values
 	// if there are no negative values available.
 	assert(std::numeric_limits<return_type>::min() != 0);
 
-	if(to > this->capacity())
+	if (to > this->capacity())
 		this->resize(to + 10);
 
-	for(int i = 0; i < n_entries_; ++i)
+	for (int i = 0; i < n_entries_; ++i)
 		entries_[i] = std::numeric_limits<return_type>::min() + 1;
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::resize(void){
+void PrimitiveContainer<return_type>::resize(void) {
 	pointer temp       = this->entries_;
 	this->entries_     = new value_type[this->n_capacity_*2];
 	this->n_capacity_ *= 2;
@@ -860,11 +860,11 @@ void PrimitiveContainer<return_type>::resize(void){
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::resize(const size_t new_size){
+void PrimitiveContainer<return_type>::resize(const size_t new_size) {
 	// if new size < current capacity
-	if(new_size < this->n_capacity_){
+	if (new_size < this->n_capacity_) {
 		// if new size < current number of entries
-		if(new_size < this->n_entries_){
+		if (new_size < this->n_entries_) {
 			this->n_entries_ = new_size;
 			return;
 		}
@@ -879,53 +879,53 @@ void PrimitiveContainer<return_type>::resize(const size_t new_size){
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::operator+=(const int8_t entry){
-	if(this->n_entries_ == this->n_capacity_)
+void PrimitiveContainer<return_type>::operator+=(const int8_t entry) {
+	if (this->n_entries_ == this->n_capacity_)
 		this->resize();
 
-	if(entry < std::numeric_limits<return_type>::min()){
+	if (entry < std::numeric_limits<return_type>::min()) {
 		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (int)entry << "->" << (int)return_type(entry) << std::endl;
 	}
 
-	if(entry == INT8_MIN) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min();
-	else if(entry == INT8_MIN+1) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min()+1;
+	if (entry == INT8_MIN) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min();
+	else if (entry == INT8_MIN+1) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min()+1;
 	else this->entries_[this->n_entries_++] = entry;
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::operator+=(const int16_t entry){
-	if(this->n_entries_ == this->n_capacity_)
+void PrimitiveContainer<return_type>::operator+=(const int16_t entry) {
+	if (this->n_entries_ == this->n_capacity_)
 		this->resize();
 
-	if(entry < std::numeric_limits<return_type>::min()){
+	if (entry < std::numeric_limits<return_type>::min()) {
 		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (int)entry << "->" << (int)return_type(entry) << std::endl;
 	}
 
-	if(entry == INT16_MIN) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min();
-	else if(entry == INT16_MIN+1) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min()+1;
+	if (entry == INT16_MIN) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min();
+	else if (entry == INT16_MIN+1) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min()+1;
 	else this->entries_[this->n_entries_++] = entry;
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::operator+=(const int32_t entry){
-	if(this->n_entries_ == this->n_capacity_)
+void PrimitiveContainer<return_type>::operator+=(const int32_t entry) {
+	if (this->n_entries_ == this->n_capacity_)
 		this->resize();
 
-	if(entry < std::numeric_limits<return_type>::min()){
+	if (entry < std::numeric_limits<return_type>::min()) {
 		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (int)entry << "->" << (int)return_type(entry) << std::endl;
 	}
 
-	if(entry == INT32_MIN) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min();
-	else if(entry == INT32_MIN+1) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min()+1;
+	if (entry == INT32_MIN) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min();
+	else if (entry == INT32_MIN+1) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min()+1;
 	else this->entries_[this->n_entries_++] = entry;
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::operator+=(const int64_t entry){
-	if(this->n_entries_ == this->n_capacity_)
+void PrimitiveContainer<return_type>::operator+=(const int64_t entry) {
+	if (this->n_entries_ == this->n_capacity_)
 		this->resize();
 
-	if(entry < std::numeric_limits<return_type>::min()){
+	if (entry < std::numeric_limits<return_type>::min()) {
 		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (int64_t)entry << "->" << (int64_t)return_type(entry) << std::endl;
 	}
 
@@ -933,11 +933,11 @@ void PrimitiveContainer<return_type>::operator+=(const int64_t entry){
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::operator+=(const uint8_t entry){
-	if(this->n_entries_ == this->n_capacity_)
+void PrimitiveContainer<return_type>::operator+=(const uint8_t entry) {
+	if (this->n_entries_ == this->n_capacity_)
 		this->resize();
 
-	if(entry > std::numeric_limits<return_type>::max()){
+	if (entry > std::numeric_limits<return_type>::max()) {
 		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (uint32_t)entry << "->" << (uint32_t)return_type(entry) << std::endl;
 	}
 
@@ -945,11 +945,11 @@ void PrimitiveContainer<return_type>::operator+=(const uint8_t entry){
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::operator+=(const uint16_t entry){
-	if(this->n_entries_ == this->n_capacity_)
+void PrimitiveContainer<return_type>::operator+=(const uint16_t entry) {
+	if (this->n_entries_ == this->n_capacity_)
 		this->resize();
 
-	if(entry > std::numeric_limits<return_type>::max()){
+	if (entry > std::numeric_limits<return_type>::max()) {
 		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (uint32_t)entry << "->" << (uint32_t)return_type(entry) << std::endl;
 	}
 
@@ -957,11 +957,11 @@ void PrimitiveContainer<return_type>::operator+=(const uint16_t entry){
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::operator+=(const uint32_t entry){
-	if(this->n_entries_ == this->n_capacity_)
+void PrimitiveContainer<return_type>::operator+=(const uint32_t entry) {
+	if (this->n_entries_ == this->n_capacity_)
 		this->resize();
 
-	if(entry > std::numeric_limits<return_type>::max()){
+	if (entry > std::numeric_limits<return_type>::max()) {
 		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (uint32_t)entry << "->" << (uint32_t)return_type(entry) << std::endl;
 	}
 
@@ -970,11 +970,11 @@ void PrimitiveContainer<return_type>::operator+=(const uint32_t entry){
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::operator+=(const uint64_t entry){
-	if(this->n_entries_ == this->n_capacity_)
+void PrimitiveContainer<return_type>::operator+=(const uint64_t entry) {
+	if (this->n_entries_ == this->n_capacity_)
 		this->resize();
 
-	if(entry > std::numeric_limits<return_type>::max()){
+	if (entry > std::numeric_limits<return_type>::max()) {
 		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (uint64_t)entry << "->" << (uint64_t)return_type(entry) << std::endl;
 	}
 
@@ -982,31 +982,31 @@ void PrimitiveContainer<return_type>::operator+=(const uint64_t entry){
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::operator+=(const char entry){
-	if(this->n_entries_ == this->n_capacity_)
+void PrimitiveContainer<return_type>::operator+=(const char entry) {
+	if (this->n_entries_ == this->n_capacity_)
 		this->resize();
 
 	this->entries_[this->n_entries_++] = entry;
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::operator+=(const float entry){
-	if(this->n_entries_ == this->n_capacity_)
+void PrimitiveContainer<return_type>::operator+=(const float entry) {
+	if (this->n_entries_ == this->n_capacity_)
 		this->resize();
 
 	this->entries_[this->n_entries_++] = entry;
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::operator+=(const double entry){
-	if(this->n_entries_ == this->n_capacity_)
+void PrimitiveContainer<return_type>::operator+=(const double entry) {
+	if (this->n_entries_ == this->n_capacity_)
 		this->resize();
 
 	this->entries_[this->n_entries_++] = entry;
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::operator+=(const std::string& entry){
+void PrimitiveContainer<return_type>::operator+=(const std::string& entry) {
 	std::cerr << utility::timestamp("WARNING") << "Cannot add a string to this container" << std::endl;
 }
 
@@ -1016,14 +1016,14 @@ void PrimitiveContainer<return_type>::operator+=(const std::string& entry){
 
 
 template <class return_type>
-PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer() : containers_(nullptr){}
+PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer() : containers_(nullptr) {}
 
 template <class return_type>
 PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const self_type& other) :
 	PrimitiveGroupContainerInterface(other),
 	containers_(static_cast<pointer>(::operator new[](this->n_capacity_*sizeof(value_type))))
 {
-	for(int i = 0; i < this->size(); ++i)
+	for (int i = 0; i < this->size(); ++i)
 		new( &this->containers_[i] ) value_type( other.at(i) );
 }
 
@@ -1036,8 +1036,8 @@ PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const data_contain
 	containers_(static_cast<pointer>(::operator new[](this->n_objects_*sizeof(value_type))))
 {
 
-	if(container.header.data_header.IsSigned()){
-		switch(container.header.data_header.GetPrimitiveType()){
+	if (container.header.data_header.IsSigned()) {
+		switch(container.header.data_header.GetPrimitiveType()) {
 		case(YON_TYPE_8B):     (this->Setup<int8_t>(container,  offset, n_objects, strides_each)); break;
 		case(YON_TYPE_16B):    (this->Setup<int16_t>(container, offset, n_objects, strides_each)); break;
 		case(YON_TYPE_32B):    (this->Setup<int32_t>(container, offset, n_objects, strides_each)); break;
@@ -1051,7 +1051,7 @@ PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const data_contain
 		default: std::cerr << utility::timestamp("ERROR","PGC") << "Disallowed: " << container.header.data_header.GetPrimitiveType() << std::endl; return;
 		}
 	} else {
-		switch(container.header.data_header.GetPrimitiveType()){
+		switch(container.header.data_header.GetPrimitiveType()) {
 		case(YON_TYPE_8B):     (this->Setup<uint8_t>(container,  offset, n_objects, strides_each)); break;
 		case(YON_TYPE_16B):    (this->Setup<uint16_t>(container, offset, n_objects, strides_each)); break;
 		case(YON_TYPE_32B):    (this->Setup<uint32_t>(container, offset, n_objects, strides_each)); break;
@@ -1068,8 +1068,8 @@ PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const data_contain
 }
 
 template <class return_type>
-PrimitiveGroupContainer<return_type>::~PrimitiveGroupContainer(){
-	for(std::size_t i = 0; i < this->n_objects_; ++i)
+PrimitiveGroupContainer<return_type>::~PrimitiveGroupContainer() {
+	for (std::size_t i = 0; i < this->n_objects_; ++i)
 		((this->containers_ + i)->~value_type)();
 
 	::operator delete[](static_cast<void*>(this->containers_));
@@ -1077,23 +1077,23 @@ PrimitiveGroupContainer<return_type>::~PrimitiveGroupContainer(){
 
 template <class return_type>
 template <class actual_primitive_type>
-void PrimitiveGroupContainer<return_type>::Setup(const data_container_type& container, const uint32_t& offset, const uint32_t n_objects, const uint32_t strides_each){
+void PrimitiveGroupContainer<return_type>::Setup(const data_container_type& container, const uint32_t& offset, const uint32_t n_objects, const uint32_t strides_each) {
 	uint32_t current_offset = offset;
-	for(uint32_t i = 0; i < this->n_objects_; ++i){
+	for (uint32_t i = 0; i < this->n_objects_; ++i) {
 		new( &this->containers_[i] ) value_type( container, current_offset, strides_each );
 		current_offset += strides_each * sizeof(actual_primitive_type);
 	}
 }
 
 template <class return_type>
-bcf1_t* PrimitiveGroupContainer<return_type>::UpdateHtslibVcfRecordFormatInt32(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+bcf1_t* PrimitiveGroupContainer<return_type>::UpdateHtslibVcfRecordFormatInt32(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const {
 	uint32_t n_records = 0;
-	for(uint32_t i = 0; i < this->size(); ++i)
+	for (uint32_t i = 0; i < this->size(); ++i)
 		n_records += this->at(i).size();
 
 	int32_t* dst = new int32_t[n_records];
 	uint32_t n_offset = 0;
-	for(uint32_t i = 0; i < this->size(); ++i){
+	for (uint32_t i = 0; i < this->size(); ++i) {
 		utility::FormatDataHtslib(this->at(i).data(), &dst[n_offset], this->at(i).size());
 		n_offset += this->at(i).size();
 	}
@@ -1105,14 +1105,14 @@ bcf1_t* PrimitiveGroupContainer<return_type>::UpdateHtslibVcfRecordFormatInt32(b
 }
 
 template <class return_type>
-bcf1_t* PrimitiveGroupContainer<return_type>::UpdateHtslibVcfRecordFormatFloat(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+bcf1_t* PrimitiveGroupContainer<return_type>::UpdateHtslibVcfRecordFormatFloat(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const {
 	uint32_t n_records = 0;
-	for(uint32_t i = 0; i < this->size(); ++i)
+	for (uint32_t i = 0; i < this->size(); ++i)
 		n_records += this->at(i).size();
 
 	float* dst = new float[n_records];
 	uint32_t n_offset = 0;
-	for(uint32_t i = 0; i < this->size(); ++i){
+	for (uint32_t i = 0; i < this->size(); ++i) {
 		utility::FormatDataHtslib(this->at(i).data(), &dst[n_offset], this->at(i).size());
 		n_offset += this->at(i).size();
 	}
@@ -1124,14 +1124,14 @@ bcf1_t* PrimitiveGroupContainer<return_type>::UpdateHtslibVcfRecordFormatFloat(b
 }
 
 template <class return_type>
-bcf1_t* PrimitiveGroupContainer<return_type>::UpdateHtslibVcfRecordFormatString(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+bcf1_t* PrimitiveGroupContainer<return_type>::UpdateHtslibVcfRecordFormatString(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const {
 	std::cerr << utility::timestamp("ERROR","PGC") << "Illegal conversion from non-character primitive group container to string" << std::endl;
 	exit(1);
 	return(rec);
 }
 
 template <class return_type>
-PrimitiveGroupContainerInterface* PrimitiveGroupContainer<return_type>::Move(void){
+PrimitiveGroupContainerInterface* PrimitiveGroupContainer<return_type>::Move(void) {
 	self_type* o = new self_type();
 	o->n_capacity_ = this->n_capacity_;
 	o->n_objects_  = this->n_objects_;
@@ -1142,13 +1142,13 @@ PrimitiveGroupContainerInterface* PrimitiveGroupContainer<return_type>::Move(voi
 }
 
 template <class return_type>
-yon1_dc_t PrimitiveGroupContainer<return_type>::ToDataContainer(void){
-	if(this->size() == 0)
+yon1_dc_t PrimitiveGroupContainer<return_type>::ToDataContainer(void) {
+	if (this->size() == 0)
 		return yon1_dc_t();
 
 	uint32_t n_entries = 0;
 	uint32_t ref_size = this->at(0).size();
-	for(uint32_t i = 0; i < this->size(); ++i){
+	for (uint32_t i = 0; i < this->size(); ++i) {
 		assert(this->at(i).size() == ref_size);
 		n_entries += this->at(i).size();
 	}
@@ -1158,7 +1158,7 @@ yon1_dc_t PrimitiveGroupContainer<return_type>::ToDataContainer(void){
 	d.strides_uncompressed.resize(n_entries*sizeof(return_type) + 128);
 	d.header.data_header.stride = ref_size;
 
-	for(uint32_t i = 0; i < this->size(); ++i)
+	for (uint32_t i = 0; i < this->size(); ++i)
 		this->at(i).UpdateDataContainer(d, false);
 
 	d.AddStride(ref_size);
@@ -1167,21 +1167,21 @@ yon1_dc_t PrimitiveGroupContainer<return_type>::ToDataContainer(void){
 }
 
 template <class return_type>
-yon1_dc_t& PrimitiveGroupContainer<return_type>::UpdateDataContainer(yon1_dc_t& container){
-	if(this->size() == 0)
+yon1_dc_t& PrimitiveGroupContainer<return_type>::UpdateDataContainer(yon1_dc_t& container) {
+	if (this->size() == 0)
 		return(container);
 
 	uint32_t n_entries = 0;
 	uint32_t ref_size = this->at(0).size();
-	for(uint32_t i = 0; i < this->size(); ++i){
+	for (uint32_t i = 0; i < this->size(); ++i) {
 		assert(this->at(i).size() == ref_size);
 		n_entries += this->at(i).size();
 	}
 
-	if(container.data_uncompressed.size() + n_entries > container.data_uncompressed.capacity())
+	if (container.data_uncompressed.size() + n_entries > container.data_uncompressed.capacity())
 		container.data_uncompressed.resize((container.data_uncompressed.size()+n_entries)*2);
 
-	for(uint32_t i = 0; i < this->size(); ++i)
+	for (uint32_t i = 0; i < this->size(); ++i)
 		this->at(i).UpdateDataContainer(container, false);
 
 	container.AddStride(ref_size);
@@ -1190,27 +1190,27 @@ yon1_dc_t& PrimitiveGroupContainer<return_type>::UpdateDataContainer(yon1_dc_t& 
 }
 
 template <class return_type>
-void PrimitiveGroupContainer<return_type>::resize(void){
+void PrimitiveGroupContainer<return_type>::resize(void) {
 	pointer temp       = this->containers_;
 	this->n_capacity_ *= 2;
 	this->containers_  = static_cast<pointer>(::operator new[](this->n_capacity_*sizeof(value_type)));
 
-	for(uint32_t i = 0; i < this->size(); ++i)
+	for (uint32_t i = 0; i < this->size(); ++i)
 		new( &this->containers_[i] ) value_type( temp[i] );
 
 	// Delete old data.
-	for(std::size_t i = 0; i < this->size(); ++i)
+	for (std::size_t i = 0; i < this->size(); ++i)
 		((temp + i)->~value_type)();
 
 	::operator delete[](static_cast<void*>(temp));
 }
 
 template <class return_type>
-void PrimitiveGroupContainer<return_type>::resize(const size_t new_size){
+void PrimitiveGroupContainer<return_type>::resize(const size_t new_size) {
 	// if new size < current capacity
-	if(new_size < this->n_capacity_){
+	if (new_size < this->n_capacity_) {
 		// if new size < current number of entries
-		if(new_size < this->n_objects_){
+		if (new_size < this->n_objects_) {
 			this->n_objects_ = new_size;
 			return;
 		}
@@ -1221,11 +1221,11 @@ void PrimitiveGroupContainer<return_type>::resize(const size_t new_size){
 	this->n_capacity_  = new_size;
 	this->containers_  = static_cast<pointer>(::operator new[](this->n_capacity_*sizeof(value_type)));
 
-	for(uint32_t i = 0; i < this->size(); ++i)
+	for (uint32_t i = 0; i < this->size(); ++i)
 		new( &this->containers_[i] ) value_type( temp[i] );
 
 	// Delete old data.
-	for(std::size_t i = 0; i < this->size(); ++i)
+	for (std::size_t i = 0; i < this->size(); ++i)
 		((temp + i)->~value_type)();
 
 	::operator delete[](static_cast<void*>(temp));

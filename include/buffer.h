@@ -61,13 +61,13 @@ public:
 	self_type& operator=(self_type&& other) noexcept;
 	~yon_buffer_t();
 
-	inline reference back(void){ return(this->buffer_[this->n_chars_-1]); }
-	inline reference front(void){ return(this->buffer_[0]); }
+	inline reference back(void) { return(this->buffer_[this->n_chars_-1]); }
+	inline reference front(void) { return(this->buffer_[0]); }
 	inline const_reference back(void) const{ return(this->buffer_[this->n_chars_-1]); }
 	inline const_reference front(void) const{ return(this->buffer_[0]); }
 
 	// Iterator
-	inline iterator begin(){ return iterator(&this->buffer_[0]); }
+	inline iterator begin() { return iterator(&this->buffer_[0]); }
 	inline iterator end()  { return iterator(&this->buffer_[this->n_chars_]); }
 	inline const_iterator begin()  const{ return const_iterator(&this->buffer_[0]); }
 	inline const_iterator end()    const{ return const_iterator(&this->buffer_[this->n_chars_]); }
@@ -78,9 +78,9 @@ public:
 	inline void set(const size_t size, char* target);
 	inline void set(char* target);
 
-	inline void reset(){ this->n_chars_ = 0; this->iterator_position_ = 0; }
-	inline void resetIterator(){ this->iterator_position_ = 0; }
-	inline void move(const uint64_t to){ this->n_chars_ = to; }
+	inline void reset() { this->n_chars_ = 0; this->iterator_position_ = 0; }
+	inline void resetIterator() { this->iterator_position_ = 0; }
+	inline void move(const uint64_t to) { this->n_chars_ = to; }
 	inline const uint64_t& size(void) const{ return this->n_chars_; }
 	inline const uint64_t& capacity(void) const{ return this->width_; }
 
@@ -117,14 +117,14 @@ public:
 	self_type& operator+=(const int64_t& value);
 	self_type& operator+=(const std::string& value);
 
-	inline reference operator[](const uint64_t position){ return this->buffer_[position]; }
+	inline reference operator[](const uint64_t position) { return this->buffer_[position]; }
 	inline const_reference operator[](const uint64_t position) const{ return this->buffer_[position]; }
-	inline reference at(const uint64_t position){ return this->buffer_[position]; }
+	inline reference at(const uint64_t position) { return this->buffer_[position]; }
 	inline const_reference at(const uint64_t position) const{ return this->buffer_[position]; }
-	inline pointer data(void){ return(this->buffer_); }
+	inline pointer data(void) { return(this->buffer_); }
 	inline const_pointer data(void) const{ return(this->buffer_); }
 
-	void read(char* target, const uint32_t n_length){
+	void read(char* target, const uint32_t n_length) {
 		memcpy(target, &this->buffer_[this->iterator_position_], n_length);
 		this->iterator_position_ += n_length;
 	}
@@ -165,12 +165,12 @@ void SerializeString(const std::string& string, yon_buffer_t& buffer);
 void DeserializeString(std::string& string, yon_buffer_t& buffer);
 
 template <class T>
-static void SerializePrimitive(const T& value, yon_buffer_t& buffer){
+static void SerializePrimitive(const T& value, yon_buffer_t& buffer) {
 	buffer += value;
 }
 
 template <class T>
-static void DeserializePrimitive(T& value, yon_buffer_t& buffer){
+static void DeserializePrimitive(T& value, yon_buffer_t& buffer) {
 	buffer >> value;
 }
 

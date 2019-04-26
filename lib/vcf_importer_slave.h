@@ -109,7 +109,7 @@ public:
 	 */
 	//bool AddGenotypes(const vcf_container_type& container, yon1_vnt_t* rcds);
 
-	inline void SetVcfHeader(std::shared_ptr<vcf_header_type>& header){
+	inline void SetVcfHeader(std::shared_ptr<vcf_header_type>& header) {
 		this->vcf_header_ = header;
 		// Setup genotype permuter and genotype encoder.
 		this->permutator.SetSamples(header->GetNumberSamples());

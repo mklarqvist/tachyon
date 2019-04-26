@@ -27,14 +27,14 @@ std::string tachyon::INTERPRETED_COMMAND;
  * library versions.
  * @param separator Boolean regulating the presence/absence of a dashed delimiter line after the program message.
  */
-void programMessage(const bool separator = true){
+void programMessage(const bool separator = true) {
 	// The OpenSSL version string generally returns a visually unappealing format
 	// that includes placeholder X's. These are generally preceded by two single
 	// blank spaces. If we find two consecutive blank spaces then present the
 	// substring from [0, match) left-inclusive.
 	std::string openssl_version_string = SSLeay_version(SSLEAY_VERSION);
 	size_t match = openssl_version_string.find("  ");
-	if(match != std::string::npos) openssl_version_string = openssl_version_string.substr(0, match);
+	if (match != std::string::npos) openssl_version_string = openssl_version_string.substr(0, match);
 
 	// General message for program version, git version, and linked library versions.
 	std::cerr << "Program:   " << tachyon::TACHYON_PROGRAM_NAME << "-" << VERSION << " (Tools for querying and manipulating variant call data)" << std::endl;
@@ -45,7 +45,7 @@ void programMessage(const bool separator = true){
 	std::cerr << "Contact: Marcus D. R. Klarqvist <mk819@cam.ac.uk>" << std::endl;
 	std::cerr << "Documentation: https://github.com/mklarqvist/tachyon" << std::endl;
 	std::cerr << "License: MIT" << std::endl;
-	if(separator) std::cerr << "----------" << std::endl;
+	if (separator) std::cerr << "----------" << std::endl;
 }
 
 /**<
@@ -53,7 +53,7 @@ void programMessage(const bool separator = true){
  * program message to standard out and then prints out the available
  * command names and their descriptions.
  */
-void programHelp(void){
+void programHelp(void) {
 	programMessage(false);
 	std::cerr << "\nUsage: " << tachyon::TACHYON_PROGRAM_NAME << " [--version] [--help] <commands> <argument>"
     "\n\n"

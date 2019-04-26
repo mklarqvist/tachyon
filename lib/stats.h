@@ -30,7 +30,7 @@ DEALINGS IN THE SOFTWARE.
 #include "program_utils.h"
 #include "variant_reader.h"
 
-void stats_usage(void){
+void stats_usage(void) {
 	programMessage(true);
 	std::cerr <<
 	"About:  Calculate comprehensive per-sample statistics. Data is written to\n"
@@ -40,14 +40,14 @@ void stats_usage(void){
 	"  -i FILE   input YON file (required)\n" << std::endl;
 }
 
-int stats(int argc, char** argv){
-	if(argc < 2){
+int stats(int argc, char** argv) {
+	if (argc < 2) {
 		programHelp();
 		return(1);
 	}
 
 	int c;
-	if(argc == 2){
+	if (argc == 2) {
 		stats_usage();
 		return(1);
 	}
@@ -62,8 +62,8 @@ int stats(int argc, char** argv){
 	tachyon::VariantReaderSettings settings;
 	SILENT = 0;
 
-	while ((c = getopt_long(argc, argv, "i:s?", long_options, &option_index)) != -1){
-		switch (c){
+	while ((c = getopt_long(argc, argv, "i:s?", long_options, &option_index)) != -1) {
+		switch (c) {
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
 			break;
@@ -85,13 +85,13 @@ int stats(int argc, char** argv){
 		}
 	}
 
-	if(settings.input.length() == 0){
+	if (settings.input.length() == 0) {
 		std::cerr << tachyon::utility::timestamp("ERROR") << "No input value specified..." << std::endl;
 		return(1);
 	}
 
 	// Print messages
-	if(!SILENT){
+	if (!SILENT) {
 		programMessage();
 		std::cerr << tachyon::utility::timestamp("LOG") << "Calling stats..." << std::endl;
 	}
@@ -99,7 +99,7 @@ int stats(int argc, char** argv){
 	tachyon::VariantReader reader;
 	reader.GetSettings() = settings;
 
-	if(!reader.open(settings.input)){
+	if (!reader.open(settings.input)) {
 		std::cerr << "failed to open" << std::endl;
 		return 1;
 	}

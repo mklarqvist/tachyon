@@ -48,7 +48,7 @@ void VcfHeader::AddContigInfo(const bcf_idpair_t& idPair) {
 			current_key == "length")
 		{
 			//continue;
-		} else if(current_key == "IDX"){
+		} else if (current_key == "IDX") {
 			c.idx = atoi(hrec0->vals[j]);
 		} else {
 			c.extra.push_back(std::pair<std::string,std::string>(current_key, std::string(hrec0->vals[j])));
@@ -60,13 +60,13 @@ void VcfHeader::AddContigInfo(const bcf_idpair_t& idPair) {
   }
 
   // Add current contig to map
-  if(this->contigs_.size() == 0){
+  if (this->contigs_.size() == 0) {
 	  this->contigs_.push_back(c);
 	  this->contigs_map_[c.name] = 0;
 	  return;
   }
 
-  if(this->contigs_map_.find(c.name) == this->contigs_map_.end()){
+  if (this->contigs_map_.find(c.name) == this->contigs_map_.end()) {
 	  this->contigs_map_[c.name] = this->contigs_.size();
 	  this->contigs_.push_back(c);
   } else {
@@ -83,20 +83,20 @@ void VcfHeader::AddFilterInfo(const bcf_hrec_t* hrec) {
 	VcfFilter f;
 	f.id = std::string(hrec->vals[0]);
 	f.description = std::string(hrec->vals[1]);
-	for(int i = 2; i < hrec->nkeys; ++i){
-		if(std::string(hrec->keys[i]) == "IDX"){
+	for (int i = 2; i < hrec->nkeys; ++i) {
+		if (std::string(hrec->keys[i]) == "IDX") {
 			f.idx = atoi(hrec->vals[i]);
 		}
 	}
 
 	// Add current filter field to map.
-	if(this->filter_fields_.size() == 0){
+	if (this->filter_fields_.size() == 0) {
 		this->filter_fields_.push_back(f);
 		this->filter_fields_map_[f.id] = 0;
 		return;
 	}
 
-	if(this->filter_fields_map_.find(f.id) == this->filter_fields_map_.end()){
+	if (this->filter_fields_map_.find(f.id) == this->filter_fields_map_.end()) {
 		this->filter_fields_map_[f.id] = this->filter_fields_.size();
 		this->filter_fields_.push_back(f);
 	} else {
@@ -133,13 +133,13 @@ void VcfHeader::AddInfo(const bcf_hrec_t* hrec) {
 	}
 
 	// Add current info field to map.
-	if(this->info_fields_.size() == 0){
+	if (this->info_fields_.size() == 0) {
 		this->info_fields_.push_back(f);
 		this->info_fields_map_[f.id] = 0;
 		return;
 	}
 
-	if(this->info_fields_map_.find(f.id) == this->info_fields_map_.end()){
+	if (this->info_fields_map_.find(f.id) == this->info_fields_map_.end()) {
 		this->info_fields_map_[f.id] = this->info_fields_.size();
 		this->info_fields_.push_back(f);
 	} else {
@@ -172,13 +172,13 @@ void VcfHeader::AddFormatInfo(const bcf_hrec_t* hrec) {
 	}
 
 	// Add current format field to map.
-	if(this->format_fields_.size() == 0){
+	if (this->format_fields_.size() == 0) {
 		this->format_fields_.push_back(f);
 		this->format_fields_map_[f.id] = 0;
 		return;
 	}
 
-	if(this->format_fields_map_.find(f.id) == this->format_fields_map_.end()){
+	if (this->format_fields_map_.find(f.id) == this->format_fields_map_.end()) {
 		this->format_fields_map_[f.id] = this->format_fields_.size();
 		this->format_fields_.push_back(f);
 	} else {
@@ -211,13 +211,13 @@ void VcfHeader::AddExtra(const bcf_hrec_t* hrec) {
 }
 
 void VcfHeader::AddSample(const std::string& sample_name) {
-	if(this->samples_.size() == 0){
+	if (this->samples_.size() == 0) {
 		this->samples_.push_back(sample_name);
 		this->samples_map_[sample_name] = 0;
 		return;
 	}
 
-	if(this->samples_map_.find(sample_name) == this->samples_map_.end()){
+	if (this->samples_map_.find(sample_name) == this->samples_map_.end()) {
 		this->samples_map_[sample_name] = this->samples_.size();
 		this->samples_.push_back(sample_name);
 	} else {
@@ -228,111 +228,111 @@ void VcfHeader::AddSample(const std::string& sample_name) {
 
 VcfContig* VcfHeader::GetContig(const std::string& name) {
 	map_type::const_iterator it = this->contigs_map_.find(name);
-	if(it != this->contigs_map_.end()) return(&this->contigs_[it->second]);
+	if (it != this->contigs_map_.end()) return(&this->contigs_[it->second]);
 	return(nullptr);
 }
 
 VcfContig* VcfHeader::GetContig(const int& idx) {
 	map_reverse_type::const_iterator it = this->contigs_reverse_map_.find(idx);
-	if(it != this->contigs_reverse_map_.end()) return(&this->contigs_[it->second]);
+	if (it != this->contigs_reverse_map_.end()) return(&this->contigs_[it->second]);
 	return(nullptr);
 }
 
 VcfInfo* VcfHeader::GetInfo(const std::string& name) {
 	map_type::const_iterator it = this->info_fields_map_.find(name);
-	if(it != this->info_fields_map_.end()) return(&this->info_fields_[it->second]);
+	if (it != this->info_fields_map_.end()) return(&this->info_fields_[it->second]);
 	return(nullptr);
 }
 
 VcfInfo* VcfHeader::GetInfo(const int& idx) {
 	map_reverse_type::const_iterator it = this->info_fields_reverse_map_.find(idx);
-	if(it != this->info_fields_reverse_map_.end()) return(&this->info_fields_[it->second]);
+	if (it != this->info_fields_reverse_map_.end()) return(&this->info_fields_[it->second]);
 	return(nullptr);
 }
 
 VcfFormat* VcfHeader::GetFormat(const std::string& name) {
 	map_type::const_iterator it = this->format_fields_map_.find(name);
-	if(it != this->format_fields_map_.end()) return(&this->format_fields_[it->second]);
+	if (it != this->format_fields_map_.end()) return(&this->format_fields_[it->second]);
 	return(nullptr);
 }
 
 VcfFormat* VcfHeader::GetFormat(const int& idx) {
 	map_reverse_type::const_iterator it = this->format_fields_reverse_map_.find(idx);
-	if(it != this->format_fields_reverse_map_.end()) return(&this->format_fields_[it->second]);
+	if (it != this->format_fields_reverse_map_.end()) return(&this->format_fields_[it->second]);
 	return(nullptr);
 }
 
 VcfFilter* VcfHeader::GetFilter(const std::string& name) {
 	map_type::const_iterator it = this->filter_fields_map_.find(name);
-	if(it != this->filter_fields_map_.end()) return(&this->filter_fields_[it->second]);
+	if (it != this->filter_fields_map_.end()) return(&this->filter_fields_[it->second]);
 	return(nullptr);
 }
 
 VcfFilter* VcfHeader::GetFilter(const int& idx) {
 	map_reverse_type::const_iterator it = this->filter_fields_reverse_map_.find(idx);
-	if(it != this->filter_fields_reverse_map_.end()) return(&this->filter_fields_[it->second]);
+	if (it != this->filter_fields_reverse_map_.end()) return(&this->filter_fields_[it->second]);
 	return(nullptr);
 }
 
 std::string* VcfHeader::GetSample(const std::string& name) {
 	map_type::const_iterator it = this->samples_map_.find(name);
-	if(it != this->samples_map_.end()) return(&this->samples_[it->second]);
+	if (it != this->samples_map_.end()) return(&this->samples_[it->second]);
 	return(nullptr);
 }
 
-bool VcfHeader::BuildReverseMaps(void){
+bool VcfHeader::BuildReverseMaps(void) {
 	this->contigs_reverse_map_.clear();
 	this->info_fields_reverse_map_.clear();
 	this->format_fields_reverse_map_.clear();
 	this->filter_fields_reverse_map_.clear();
 
-	for(uint32_t i = 0; i < this->contigs_.size(); ++i)       this->contigs_reverse_map_[this->contigs_[i].idx] = i;
-	for(uint32_t i = 0; i < this->info_fields_.size(); ++i)   this->info_fields_reverse_map_[this->info_fields_[i].idx] = i;
-	for(uint32_t i = 0; i < this->format_fields_.size(); ++i) this->format_fields_reverse_map_[this->format_fields_[i].idx] = i;
-	for(uint32_t i = 0; i < this->filter_fields_.size(); ++i) this->filter_fields_reverse_map_[this->filter_fields_[i].idx] = i;
+	for (uint32_t i = 0; i < this->contigs_.size(); ++i)       this->contigs_reverse_map_[this->contigs_[i].idx] = i;
+	for (uint32_t i = 0; i < this->info_fields_.size(); ++i)   this->info_fields_reverse_map_[this->info_fields_[i].idx] = i;
+	for (uint32_t i = 0; i < this->format_fields_.size(); ++i) this->format_fields_reverse_map_[this->format_fields_[i].idx] = i;
+	for (uint32_t i = 0; i < this->filter_fields_.size(); ++i) this->filter_fields_reverse_map_[this->filter_fields_[i].idx] = i;
 
 	return true;
 }
 
-bool VcfHeader::BuildMaps(void){
+bool VcfHeader::BuildMaps(void) {
 	this->info_fields_map_.clear();
 	this->format_fields_map_.clear();
 	this->filter_fields_map_.clear();
 	this->contigs_map_.clear();
 
-	for(uint32_t i = 0; i < this->contigs_.size(); ++i)       this->contigs_map_[this->contigs_[i].name] = i;
-	for(uint32_t i = 0; i < this->info_fields_.size(); ++i)   this->info_fields_map_[this->info_fields_[i].id] = i;
-	for(uint32_t i = 0; i < this->format_fields_.size(); ++i) this->format_fields_map_[this->format_fields_[i].id] = i;
-	for(uint32_t i = 0; i < this->filter_fields_.size(); ++i) this->filter_fields_map_[this->filter_fields_[i].id] = i;
+	for (uint32_t i = 0; i < this->contigs_.size(); ++i)       this->contigs_map_[this->contigs_[i].name] = i;
+	for (uint32_t i = 0; i < this->info_fields_.size(); ++i)   this->info_fields_map_[this->info_fields_[i].id] = i;
+	for (uint32_t i = 0; i < this->format_fields_.size(); ++i) this->format_fields_map_[this->format_fields_[i].id] = i;
+	for (uint32_t i = 0; i < this->filter_fields_.size(); ++i) this->filter_fields_map_[this->filter_fields_[i].id] = i;
 
 	return true;
 }
 
-bool VcfHeader::RecodeIndices(void){
-	for(uint32_t i = 0; i < this->contigs_.size(); ++i)       this->contigs_[i].idx = i;
-	for(uint32_t i = 0; i < this->info_fields_.size(); ++i)   this->info_fields_[i].idx = i;
-	for(uint32_t i = 0; i < this->format_fields_.size(); ++i) this->format_fields_[i].idx = i;
-	for(uint32_t i = 0; i < this->filter_fields_.size(); ++i) this->filter_fields_[i].idx = i;
+bool VcfHeader::RecodeIndices(void) {
+	for (uint32_t i = 0; i < this->contigs_.size(); ++i)       this->contigs_[i].idx = i;
+	for (uint32_t i = 0; i < this->info_fields_.size(); ++i)   this->info_fields_[i].idx = i;
+	for (uint32_t i = 0; i < this->format_fields_.size(); ++i) this->format_fields_[i].idx = i;
+	for (uint32_t i = 0; i < this->filter_fields_.size(); ++i) this->filter_fields_[i].idx = i;
 
-	if(this->BuildMaps() == false) return false;
-	if(this->BuildReverseMaps() == false) return false;
+	if (this->BuildMaps() == false) return false;
+	if (this->BuildReverseMaps() == false) return false;
 	return true;
 }
 
-bcf_hdr_t* VcfHeader::ConvertVcfHeader(void){
+bcf_hdr_t* VcfHeader::ConvertVcfHeader(void) {
 	std::string internal = this->literals_;
 	internal += "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
-	if(this->samples_.size()){
+	if (this->samples_.size()) {
 		internal += "\tFORMAT\t";
 		internal += this->samples_[0];
-		for(size_t i = 1; i < this->samples_.size(); ++i)
+		for (size_t i = 1; i < this->samples_.size(); ++i)
 			internal += "\t" + this->samples_[i];
 	}
 	internal += "\n";
 
 	hts_vcf_header* hdr = bcf_hdr_init("r");
 	int ret = bcf_hdr_parse(hdr, (char*)internal.c_str());
-	if(ret != 0){
+	if (ret != 0) {
 		std::cerr << utility::timestamp("ERROR")  << "Failed to get bcf header from literals" << std::endl;
 		bcf_hdr_destroy(hdr);
 		return(nullptr);

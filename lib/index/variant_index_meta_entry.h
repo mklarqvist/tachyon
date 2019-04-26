@@ -24,9 +24,9 @@ public:
 		end_block(0)
 	{}
 
-	~VariantIndexMetaEntry(){}
+	~VariantIndexMetaEntry() {}
 
-	void reset(void){
+	void reset(void) {
 		this->contig_id          = -1;
 		this->n_blocks          = 0;
 		this->n_variants        = 0;
@@ -38,7 +38,7 @@ public:
 		this->end_block         = 0;
 	}
 
-	void operator=(const entry_type& entry){
+	void operator=(const entry_type& entry) {
 		this->contig_id         = entry.contig_id;
 		this->n_blocks          = 1;
 		this->n_variants        = entry.n_variants;
@@ -50,23 +50,23 @@ public:
 		this->end_block         = entry.block_id;
 	}
 
-	inline bool operator==(const entry_type& entry) const{ return(this->contig_id == entry.contig_id); }
-	inline bool operator!=(const self_type& other) const{ return(!(*this == other)); }
+	inline bool operator==(const entry_type& entry) const { return(this->contig_id == entry.contig_id); }
+	inline bool operator!=(const self_type& other) const { return(!(*this == other)); }
 
-	bool operator==(const self_type& other) const{
-		if(this->contig_id          != other.contig_id) return false;
-		if(this->n_blocks          != other.n_blocks) return false;
-		if(this->n_variants        != other.n_variants) return false;
-		if(this->byte_offset_begin != other.byte_offset_begin) return false;
-		if(this->byte_offest_end   != other.byte_offest_end) return false;
-		if(this->min_position       != other.min_position) return false;
-		if(this->max_position       != other.max_position) return false;
-		if(this->start_block       != other.start_block) return false;
-		if(this->end_block         != other.end_block) return false;
+	bool operator==(const self_type& other) const {
+		if (this->contig_id          != other.contig_id) return false;
+		if (this->n_blocks          != other.n_blocks) return false;
+		if (this->n_variants        != other.n_variants) return false;
+		if (this->byte_offset_begin != other.byte_offset_begin) return false;
+		if (this->byte_offest_end   != other.byte_offest_end) return false;
+		if (this->min_position       != other.min_position) return false;
+		if (this->max_position       != other.max_position) return false;
+		if (this->start_block       != other.start_block) return false;
+		if (this->end_block         != other.end_block) return false;
 		return true;
 	}
 
-	void operator+=(const entry_type& entry){
+	void operator+=(const entry_type& entry) {
 		++this->n_blocks;
 		this->n_variants     += entry.n_variants;
 		this->byte_offest_end = entry.byte_offset_end;
@@ -74,13 +74,13 @@ public:
 		this->end_block       = entry.block_id;
 	}
 
-	std::ostream& Print(std::ostream& stream) const{
+	std::ostream& Print(std::ostream& stream) const {
 		stream << contig_id << ":" << min_position << "-" << max_position << ", " << n_variants << "," << n_blocks << " @ " << byte_offset_begin << "-" << byte_offest_end << " blocks: " << start_block << "-" << end_block;
 		return(stream);
 	}
 
 private:
-	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry) {
 		stream.write(reinterpret_cast<const char*>(&entry.contig_id),         sizeof(int32_t));
 		stream.write(reinterpret_cast<const char*>(&entry.n_blocks),         sizeof(uint32_t));
 		stream.write(reinterpret_cast<const char*>(&entry.n_variants),       sizeof(uint32_t));
@@ -94,7 +94,7 @@ private:
 		return(stream);
 	}
 
-	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+	friend std::istream& operator>>(std::istream& stream, self_type& entry) {
 		stream.read(reinterpret_cast<char*>(&entry.contig_id),         sizeof(int32_t));
 		stream.read(reinterpret_cast<char*>(&entry.n_blocks),         sizeof(uint32_t));
 		stream.read(reinterpret_cast<char*>(&entry.n_variants),       sizeof(uint32_t));

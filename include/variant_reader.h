@@ -51,13 +51,13 @@ public:
 	 */
 	std::string GetSettingsString(void) const;
 
-	inline void SetThreads(const int32_t n_threads){ this->n_threads = n_threads; }
-	inline void SetPermute(const bool yes){ this->permute_genotypes = yes; }
-	inline void SetEncrypt(const bool yes){ this->encrypt_data = yes; }
-	inline void SetCompressionLevel(const int32_t compression_level){ this->compression_level = compression_level; }
-	inline void SetCheckpointBases(const int32_t bases){ this->checkpoint_bases = bases; }
-	inline void SetCheckpointVariants(const int32_t variants){ this->checkpoint_n_snps = variants; }
-	inline void SetPermuteGenotypes(const bool yes = true){ this->permute_genotypes = yes; }
+	inline void SetThreads(const int32_t n_threads) { this->n_threads = n_threads; }
+	inline void SetPermute(const bool yes) { this->permute_genotypes = yes; }
+	inline void SetEncrypt(const bool yes) { this->encrypt_data = yes; }
+	inline void SetCompressionLevel(const int32_t compression_level) { this->compression_level = compression_level; }
+	inline void SetCheckpointBases(const int32_t bases) { this->checkpoint_bases = bases; }
+	inline void SetCheckpointVariants(const int32_t variants) { this->checkpoint_n_snps = variants; }
+	inline void SetPermuteGenotypes(const bool yes = true) { this->permute_genotypes = yes; }
 
 public:
 	bool drop_format, header_only, show_header, annotate_genotypes;
@@ -105,8 +105,8 @@ public:
 	 * effect on the loaded `block` data.
 	 * @return A reference instance of the block settings object
 	 */
-	inline block_settings_type& GetBlockSettings(void){ return(this->block_settings); }
-	inline const block_settings_type& GetBlockSettings(void) const{ return(this->block_settings); }
+	inline block_settings_type& GetBlockSettings(void) { return(this->block_settings); }
+	inline const block_settings_type& GetBlockSettings(void) const { return(this->block_settings); }
 
 	/**<
 	 * Retrieve current settings for the variant reader. This settings
@@ -115,25 +115,25 @@ public:
 	 * parsing.
 	 * @return A reference instance of the settings object
 	 */
-	inline settings_type& GetSettings(void){ return(this->settings); }
-	inline const settings_type& GetSettings(void) const{ return(this->settings); }
+	inline settings_type& GetSettings(void) { return(this->settings); }
+	inline const settings_type& GetSettings(void) const { return(this->settings); }
 
 	/**<
 	 * Retrieve the current filter settings for the variant reader. This
 	 * object controls the pointers to filter applied to each variant.
 	 * @return A reference instance of the filter object
 	 */
-	inline variant_filter_type& GetFilterSettings(void){ return(this->variant_filters); }
+	inline variant_filter_type& GetFilterSettings(void) { return(this->variant_filters); }
 
 	// Basic accessors
-	inline header_type& GetHeader(void){ return(this->global_header); }
-	inline const header_type& GetHeader(void) const{ return(this->global_header); }
-	inline footer_type& GetFooter(void){ return(this->global_footer); }
-	inline const footer_type& GetFooter(void) const{ return(this->global_footer); }
-	inline index_type& GetIndex(void){ return(this->index); }
-	inline const index_type& GetIndex(void) const{ return(this->index); }
-	inline block_entry_type& GetCurrentContainer(void){ return(this->variant_container); }
-	inline const block_entry_type& GetCurrentContainer(void) const{ return(this->variant_container); }
+	inline header_type& GetHeader(void) { return(this->global_header); }
+	inline const header_type& GetHeader(void) const { return(this->global_header); }
+	inline footer_type& GetFooter(void) { return(this->global_footer); }
+	inline const footer_type& GetFooter(void) const { return(this->global_footer); }
+	inline index_type& GetIndex(void) { return(this->index); }
+	inline const index_type& GetIndex(void) const { return(this->index); }
+	inline block_entry_type& GetCurrentContainer(void) { return(this->variant_container); }
+	inline const block_entry_type& GetCurrentContainer(void) const { return(this->variant_container); }
 
 	/**<
 	 * Opens a YON file. Performs all prerequisite checks and loads all
@@ -236,7 +236,7 @@ public:
 	uint64_t OutputHtslibVcfSearch(void);
 
 	// Filter interval intersection and dummy version
-	inline bool FilterIntervalsDummy(const yon1_vnt_t& entry) const{ return true; }
+	inline bool FilterIntervalsDummy(const yon1_vnt_t& entry) const { return true; }
 	bool FilterIntervals(const yon1_vnt_t& entry) const;
 
 	/**<

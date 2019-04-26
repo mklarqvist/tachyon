@@ -7,16 +7,16 @@
 namespace tachyon {
 namespace utility {
 
-std::string remove_whitespace(std::string& string){
-	string.erase(remove_if(string.begin(), string.end(), isspace), string.end());
+std::string remove_whitespace(std::string& string) {
+	string.erase(remove_if (string.begin(), string.end(), isspace), string.end());
 	return(string);
 }
 
-std::string remove_excess_whitespace(const std::string& string){
+std::string remove_excess_whitespace(const std::string& string) {
 	return(std::regex_replace(string, std::regex("^ +| +$|( ) +"), std::string("$1")));
 }
 
-int IsBigEndian(){
+int IsBigEndian() {
 	union {
 		uint32_t i;
 		uint8_t  c[4];
@@ -29,7 +29,7 @@ std::vector<std::string> &split(std::string& s, char delim, std::vector<std::str
     std::stringstream ss(s);
     std::string item;
     while (std::getline(ss, item, delim)) {
-    	if(!item.empty() || (item.empty() && keepEmpty))
+    	if (!item.empty() || (item.empty() && keepEmpty))
     		elems.push_back(item);
     }
     return elems;
@@ -45,7 +45,7 @@ std::vector<std::string> &split(const std::string& s, char delim, std::vector<st
     std::stringstream ss(s);
     std::string item;
     while (std::getline(ss, item, delim)) {
-    	if(!item.empty() || (item.empty() && keepEmpty))
+    	if (!item.empty() || (item.empty() && keepEmpty))
     		elems.push_back(item);
     }
     return elems;
@@ -57,7 +57,7 @@ std::vector<std::string> split(const std::string& s, char delim, const bool keep
 	return elems;
 }
 
-std::vector<std::string> splitLastOf(const std::string& s, const char delim, const bool includeLast){
+std::vector<std::string> splitLastOf(const std::string& s, const char delim, const bool includeLast) {
 	std::size_t found = s.find_last_of(delim);
 	std::vector<std::string> ret;
 	ret.push_back(s.substr(0, found + includeLast));
@@ -66,7 +66,7 @@ std::vector<std::string> splitLastOf(const std::string& s, const char delim, con
 }
 
 
-std::string datetime(){
+std::string datetime() {
 	time_t t = time(0);
 	struct timeval  tv;
 	struct timezone tz;
@@ -86,7 +86,7 @@ std::string datetime(){
 	return std::string(&buffer[0], 23);
 }
 
-std::string timestamp(const std::string type){
+std::string timestamp(const std::string type) {
 	std::stringstream ret;
 
 	ret << "[" << datetime() << "]";
@@ -95,7 +95,7 @@ std::string timestamp(const std::string type){
 	return(ret.str());
 }
 
-std::string timestamp(const std::string type, const std::string type2){
+std::string timestamp(const std::string type, const std::string type2) {
 	std::stringstream ret;
 
 	ret << "[" << datetime() << "]";
@@ -105,14 +105,14 @@ std::string timestamp(const std::string type, const std::string type2){
 	return(ret.str());
 }
 
-std::string SecondsToTimestring(const double& value){
+std::string SecondsToTimestring(const double& value) {
 	uint32_t internalVal = value;
 	std::string retVal;
 	const uint32_t hours = internalVal / 3600;
-	if(hours > 0) retVal += std::to_string(hours) + "h";
+	if (hours > 0) retVal += std::to_string(hours) + "h";
 	internalVal %= 3600;
 	const uint32_t min = internalVal / 60;
-	if(min > 0) retVal += std::to_string(min) + "m";
+	if (min > 0) retVal += std::to_string(min) + "m";
 	internalVal %= 60;
 	const uint32_t sec = internalVal;
 	retVal += std::to_string(sec) + "s";
@@ -120,32 +120,32 @@ std::string SecondsToTimestring(const double& value){
 	return(retVal);
 }
 
-std::string BasePath(const std::string& input){
+std::string BasePath(const std::string& input) {
 	size_t found = input.find_last_of("/\\");
-	if(found != std::string::npos)
+	if (found != std::string::npos)
 		return(input.substr(0, found));
 	else return std::string();
 }
 
-std::string BaseName(const std::string& input){
+std::string BaseName(const std::string& input) {
 	size_t found = input.find_last_of("/\\");
-	if(found == std::string::npos)
+	if (found == std::string::npos)
 		found = -1;
 
 	return(input.substr(found+1, input.size()));
 }
 
-std::string ExtensionName(const std::string& input){
+std::string ExtensionName(const std::string& input) {
 	std::string base = BaseName(input);
 	size_t foundDot = base.rfind('.');
-	if(foundDot == std::string::npos)
+	if (foundDot == std::string::npos)
 		foundDot = base.size() - 1;
 
 	return(base.substr(foundDot+1, base.size()));
 }
 
 
-std::vector<std::string> FilePathBaseExtension(const std::string& input){
+std::vector<std::string> FilePathBaseExtension(const std::string& input) {
 	std::vector<std::string> ret;
 
 	const std::string base = BaseName(input);
@@ -153,7 +153,7 @@ std::vector<std::string> FilePathBaseExtension(const std::string& input){
 	ret.push_back(base);
 
 	size_t foundDot = base.rfind('.');
-	if(foundDot == std::string::npos){
+	if (foundDot == std::string::npos) {
 		ret.push_back(base);
 		ret.push_back(std::string());
 	} else {
@@ -165,10 +165,10 @@ std::vector<std::string> FilePathBaseExtension(const std::string& input){
 	return(ret);
 }
 
-std::string NumberThousandsSeparator(std::string number){
+std::string NumberThousandsSeparator(std::string number) {
 	int insertPosition = number.length() - 3;
 	char EndPos = 0;
-	if(number[0] == '-')
+	if (number[0] == '-')
 		EndPos = 1;
 
 	// Todo: fix NNNN.MMMM
@@ -177,7 +177,7 @@ std::string NumberThousandsSeparator(std::string number){
 	    insertPosition -= 3;
 	}
 
-	if(number[0] == '-'){
+	if (number[0] == '-') {
 		std::string numberTemp = "&ndash;";
 		numberTemp += number.substr(1,10000);
 		return numberTemp;
@@ -186,15 +186,15 @@ std::string NumberThousandsSeparator(std::string number){
 	return number;
 }
 
-int32_t ConvertCharToInt(const char& input){
-	if(input >= '0' && input <= '9') return input - '0';
-	else if(input >= 'A' && input <= 'F') return input - 'A' + 10;
-	else if(input >= 'a' && input <= 'f') return input - 'a' + 10;
+int32_t ConvertCharToInt(const char& input) {
+	if (input >= '0' && input <= '9') return input - '0';
+	else if (input >= 'A' && input <= 'F') return input - 'A' + 10;
+	else if (input >= 'a' && input <= 'f') return input - 'a' + 10;
 	throw std::invalid_argument("Invalid input string");
 }
 
-bool HexToBytes(const std::string& hex, uint8_t* target){
-	if(hex.size() % 2 != 0){
+bool HexToBytes(const std::string& hex, uint8_t* target) {
+	if (hex.size() % 2 != 0) {
 		std::cerr << "illegal uneven hex" << std::endl;
 		return false;
 	}
@@ -206,13 +206,13 @@ bool HexToBytes(const std::string& hex, uint8_t* target){
 	return true;
 }
 
-void SerializeString(const std::string& string, std::ostream& stream){
+void SerializeString(const std::string& string, std::ostream& stream) {
 	size_t size_helper = string.size();
 	stream.write((const char*)&size_helper, sizeof(size_t));
 	stream.write(string.data(), string.size());
 }
 
-void DeserializeString(std::string& string, std::istream& stream){
+void DeserializeString(std::string& string, std::istream& stream) {
 	size_t l_string;
 	stream.read((char*)&l_string, sizeof(size_t));
 	string.resize(l_string);

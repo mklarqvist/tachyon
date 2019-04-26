@@ -40,15 +40,15 @@ public:
     IntervalContainer& operator=(self_type&& other) noexcept;
 
     // Element access
-    inline reference at(const size_type& position){ return(this->__entries[position]); }
+    inline reference at(const size_type& position) { return(this->__entries[position]); }
     inline const_reference at(const size_type& position) const{ return(this->__entries[position]); }
-    inline reference operator[](const size_type& position){ return(this->__entries[position]); }
+    inline reference operator[](const size_type& position) { return(this->__entries[position]); }
     inline const_reference operator[](const size_type& position) const{ return(this->__entries[position]); }
-    inline pointer data(void){ return(this->__entries); }
+    inline pointer data(void) { return(this->__entries); }
     inline const_pointer data(void) const{ return(this->__entries); }
-    inline reference front(void){ return(this->__entries[0]); }
+    inline reference front(void) { return(this->__entries[0]); }
     inline const_reference front(void) const{ return(this->__entries[0]); }
-    inline reference back(void){ return(this->__entries[this->n_entries_ - 1]); }
+    inline reference back(void) { return(this->__entries[this->n_entries_ - 1]); }
     inline const_reference back(void) const{ return(this->__entries[this->n_entries_ - 1]); }
 
     // Capacity
@@ -56,15 +56,15 @@ public:
     inline const size_type& size(void) const{ return(this->n_entries_); }
 
     // Iterator
-    inline iterator begin(){ return iterator(&this->__entries[0]); }
-    inline iterator end(){ return iterator(&this->__entries[this->n_entries_]); }
+    inline iterator begin() { return iterator(&this->__entries[0]); }
+    inline iterator end() { return iterator(&this->__entries[this->n_entries_]); }
     inline const_iterator begin() const{ return const_iterator(&this->__entries[0]); }
     inline const_iterator end() const{ return const_iterator(&this->__entries[this->n_entries_]); }
     inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries_]); }
 
 	inline bool HasBlockList(void) const{ return(this->block_list_.size()); }
-	inline std::vector<index_entry_type>& GetBlockList(void){ return(this->block_list_); }
+	inline std::vector<index_entry_type>& GetBlockList(void) { return(this->block_list_); }
 	inline const std::vector<index_entry_type>& GetBlockList(void) const{ return(this->block_list_); }
 	inline bool HasIntervals(void) const{ return(this->interval_list_.size()); }
 
@@ -87,12 +87,12 @@ public:
 	                                               const int64_t& start_position,
 	                                               const int64_t& end_position) const
 	{
-		if(contigID > this->size()) return(std::vector<interval_type>());
+		if (contigID > this->size()) return(std::vector<interval_type>());
 		return(this->at(contigID).findOverlapping(start_position, end_position));
 	}
 
 	inline std::vector<interval_type> FindOverlaps(const yon1_vnt_t& rcd) const {
-		if(rcd.rid > this->size()) return(std::vector<interval_type>());
+		if (rcd.rid > this->size()) return(std::vector<interval_type>());
 		return(this->at(rcd.rid).findOverlapping(rcd.pos, rcd.pos + 1));
 	}
 

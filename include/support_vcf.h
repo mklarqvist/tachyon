@@ -77,33 +77,33 @@ struct VcfType {
 template<>
 struct VcfType<int8_t> {
   static bool IsMissing(int8_t v)  { return (v == YON_BYTE_MISSING); }
-  static bool IsVectorEnd(int8_t v){ return (v == YON_BYTE_EOV); }
+  static bool IsVectorEnd(int8_t v) { return (v == YON_BYTE_EOV); }
 };
 
 // See interface description comment above.
 template<>
 struct VcfType<int16_t> {
   static bool IsMissing(int16_t v)  { return (v == YON_SHORT_MISSING); }
-  static bool IsVectorEnd(int16_t v){ return (v == YON_SHORT_EOV); }
+  static bool IsVectorEnd(int16_t v) { return (v == YON_SHORT_EOV); }
 };
 
 // See interface description comment above.
 template<>
 struct VcfType<int> {
   static bool IsMissing(int v)  { return (v == YON_INT_MISSING); }
-  static bool IsVectorEnd(int v){ return (v == YON_INT_EOV); }
+  static bool IsVectorEnd(int v) { return (v == YON_INT_EOV); }
 };
 
 template <class T>
 struct VcfGenotype {
 	// Predicates for checking missing and sentinel entries.
-	static bool IsMissing(const T& value){ return(value == YON_BCF_GT_MISSING); }
+	static bool IsMissing(const T& value) { return(value == YON_BCF_GT_MISSING); }
 };
 
 template<>
 struct VcfType<float> {
   static bool IsMissing(float v)  { return yon_float_is_missing(v); }
-  static bool IsVectorEnd(float v){ return yon_float_is_vector_end(v); }
+  static bool IsVectorEnd(float v) { return yon_float_is_vector_end(v); }
 };
 
 
@@ -293,13 +293,13 @@ public:
 	YonContig(const VcfContig& vcf_contig);
 	~YonContig() = default;
 
-	inline std::string ToVcfString(const bool is_bcf = false) const{ return(VcfContig::ToVcfString(is_bcf)); }
-	inline std::string ToVcfString(const uint32_t idx) const{ return(VcfContig::ToVcfString(idx)); }
+	inline std::string ToVcfString(const bool is_bcf = false) const { return(VcfContig::ToVcfString(is_bcf)); }
+	inline std::string ToVcfString(const uint32_t idx) const { return(VcfContig::ToVcfString(idx)); }
 
-	inline void operator++(void){ ++this->n_blocks; }
-	inline void operator--(void){ --this->n_blocks; }
-	template <class T> inline void operator+=(const T value){ this->n_blocks += value; }
-	template <class T> inline void operator-=(const T value){ this->n_blocks -= value; }
+	inline void operator++(void) { ++this->n_blocks; }
+	inline void operator--(void) { --this->n_blocks; }
+	template <class T> inline void operator+=(const T value) { this->n_blocks += value; }
+	template <class T> inline void operator-=(const T value) { this->n_blocks -= value; }
 
 	friend std::ostream& operator<<(std::ostream& stream, const YonContig& contig);
 	friend std::istream& operator>>(std::istream& stream, YonContig& contig);
@@ -317,8 +317,8 @@ public:
 	YonInfo(const VcfInfo& vcf_info);
 	~YonInfo() = default;
 
-	inline std::string ToVcfString(const bool is_bcf = false) const{ return(VcfInfo::ToVcfString(is_bcf)); }
-	inline std::string ToVcfString(const uint32_t idx) const{ return(VcfInfo::ToVcfString(idx)); }
+	inline std::string ToVcfString(const bool is_bcf = false) const { return(VcfInfo::ToVcfString(is_bcf)); }
+	inline std::string ToVcfString(const uint32_t idx) const { return(VcfInfo::ToVcfString(idx)); }
 
 	bool EvaluateType(void);
 
@@ -337,8 +337,8 @@ public:
 	YonFormat(const VcfFormat& vcf_format);
 	~YonFormat() = default;
 
-	inline std::string ToVcfString(const bool is_bcf = false) const{ return(VcfFormat::ToVcfString(is_bcf)); }
-	inline std::string ToVcfString(const uint32_t idx) const{ return(VcfFormat::ToVcfString(idx)); }
+	inline std::string ToVcfString(const bool is_bcf = false) const { return(VcfFormat::ToVcfString(is_bcf)); }
+	inline std::string ToVcfString(const uint32_t idx) const { return(VcfFormat::ToVcfString(idx)); }
 
 	bool EvaluateType(void);
 
@@ -415,8 +415,8 @@ int32_t* FormatDataHtslib(const float*   const src,  int32_t* dst, const size_t 
 int32_t* FormatDataHtslib(const double*  const src,  int32_t* dst, const size_t n_entries);
 
 template <class T>
-float* FormatDataHtslib(const T* const src, float* dst, const size_t n_entries){
-	for(uint32_t i = 0; i < n_entries; ++i) dst[i] = src[i];
+float* FormatDataHtslib(const T* const src, float* dst, const size_t n_entries) {
+	for (uint32_t i = 0; i < n_entries; ++i) dst[i] = src[i];
 	return(dst);
 }
 

@@ -50,7 +50,7 @@ public:
 
 public:
 	VariantReaderImpl() = default;
-	VariantReaderImpl(const std::string& filename) : basic_reader(filename){}
+	VariantReaderImpl(const std::string& filename) : basic_reader(filename) {}
 
 	/**<
 	* Converts this header object into a hts_vcf_header object from the
@@ -83,48 +83,48 @@ VariantReader::VariantReader(const std::string& filename) :
 
 }
 
-VariantReader::~VariantReader(){
+VariantReader::~VariantReader() {
 	delete [] gt_exp;
 }
 
-bool VariantReader::open(void){
-	if(this->settings.input.size() == 0){
+bool VariantReader::open(void) {
+	if (this->settings.input.size() == 0) {
 		std::cerr << utility::timestamp("ERROR") << "No input file specified!" << std::endl;
 		return false;
 	}
 
-	if(this->mImpl->basic_reader.open() == false){
+	if (this->mImpl->basic_reader.open() == false) {
 		std::cerr << "Failed to open" << std::endl;
 		return false;
 	}
 
-	if(this->mImpl->basic_reader.filesize_ <= YON_FOOTER_LENGTH){
+	if (this->mImpl->basic_reader.filesize_ <= YON_FOOTER_LENGTH) {
 		std::cerr << utility::timestamp("ERROR") << "File is corrupted!" << std::endl;
 		return false;
 	}
 
 	// Seek to start of footer
 	this->mImpl->basic_reader.stream_.seekg((uint64_t)this->mImpl->basic_reader.filesize_ - YON_FOOTER_LENGTH);
-	if(!this->mImpl->basic_reader.stream_.good()){
+	if (!this->mImpl->basic_reader.stream_.good()) {
 		std::cerr << utility::timestamp("ERROR") << "Failed to seek in file!" << std::endl;
 		return false;
 	}
 	this->mImpl->basic_reader.stream_ >> this->global_footer;
 
 	// Validate the global footer.
-	if(this->global_footer.Validate() == false){
+	if (this->global_footer.Validate() == false) {
 		std::cerr << utility::timestamp("ERROR") << "Failed to validate footer!" << std::endl;
 		return false;
 	}
 
-	if(!this->mImpl->basic_reader.stream_.good()){
+	if (!this->mImpl->basic_reader.stream_.good()) {
 		std::cerr << utility::timestamp("ERROR") << "Failed to read file!" << std::endl;
 		return false;
 	}
 
 	// Seek to start of file
 	this->mImpl->basic_reader.stream_.seekg(0);
-	if(!this->mImpl->basic_reader.stream_.good()){
+	if (!this->mImpl->basic_reader.stream_.good()) {
 		std::cerr << utility::timestamp("ERROR") << "Failed to rewind file!" << std::endl;
 		return false;
 	}
@@ -133,7 +133,7 @@ bool VariantReader::open(void){
 	//this->stream >> this->global_header;
 	char magic_string[TACHYON_MAGIC_HEADER_LENGTH];
 	this->mImpl->basic_reader.stream_.read(&magic_string[0], TACHYON_MAGIC_HEADER_LENGTH);
-	if(strncmp(&magic_string[0], &TACHYON_MAGIC_HEADER[0], TACHYON_MAGIC_HEADER_LENGTH) != 0){
+	if (strncmp(&magic_string[0], &TACHYON_MAGIC_HEADER[0], TACHYON_MAGIC_HEADER_LENGTH) != 0) {
 		std::cerr << utility::timestamp("ERROR") << "Failed to validate Tachyon magic string!" << std::endl;
 		return false;
 	}
@@ -148,14 +148,14 @@ bool VariantReader::open(void){
 
 	this->mImpl->basic_reader.stream_.read(header_compressed.data(), l_c_data);
 
-	if(!this->mImpl->codec_manager.zstd_codec.Decompress(header_compressed, header_uncompressed)){
+	if (!this->mImpl->codec_manager.zstd_codec.Decompress(header_compressed, header_uncompressed)) {
 		std::cerr << utility::timestamp("ERROR") << "Failed to decompress header!" << std::endl;
 		return false;
 	}
 	assert(header_uncompressed.size() == l_data);
 	header_uncompressed >> this->global_header; // parse header from buffer
 
-	if(!this->mImpl->basic_reader.stream_.good()){
+	if (!this->mImpl->basic_reader.stream_.good()) {
 		std::cerr << utility::timestamp("ERROR") << "Failed to get header!" << std::endl;
 		return false;
 	}
@@ -175,28 +175,28 @@ bool VariantReader::open(void){
 	return(this->mImpl->basic_reader.stream_.good());
 }
 
-bool VariantReader::open(const std::string& filename){
+bool VariantReader::open(const std::string& filename) {
 	this->mImpl->basic_reader.filename_ = filename;
 	this->settings.input = filename;
-	if(settings.keychain_file.size()){
-		if(this->LoadKeychainFile() == false)
+	if (settings.keychain_file.size()) {
+		if (this->LoadKeychainFile() == false)
 			return false;
 	}
 	return(this->open());
 }
 
-bool VariantReader::NextBlock(){
-	if(this->CheckNextValid() == false) return false;
+bool VariantReader::NextBlock() {
+	if (this->CheckNextValid() == false) return false;
 
 	// Reset and re-use
 	this->variant_container.clear();
 
 	// Read packed header and footer bytes from the byte-stream.
-	if(!this->variant_container.ReadHeaderFooter(this->mImpl->basic_reader.stream_))
+	if (!this->variant_container.ReadHeaderFooter(this->mImpl->basic_reader.stream_))
 		return false;
 
 	// Decompress the footer.
-	if(!this->mImpl->codec_manager.zstd_codec.Decompress(this->variant_container.footer_support)){
+	if (!this->mImpl->codec_manager.zstd_codec.Decompress(this->variant_container.footer_support)) {
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 		return false;
 	}
@@ -204,7 +204,7 @@ bool VariantReader::NextBlock(){
 	this->variant_container.footer_support.data_uncompressed >> this->variant_container.footer;
 
 	// Attempts to read a YON block with the settings provided.
-	if(!this->variant_container.read(this->mImpl->basic_reader.stream_,
+	if (!this->variant_container.read(this->mImpl->basic_reader.stream_,
 	                                 this->block_settings,
 	                                 this->global_header))
 	{
@@ -212,21 +212,21 @@ bool VariantReader::NextBlock(){
 	}
 
 	// encryption manager ascertainment
-	if(this->variant_container.header.controller.any_encrypted){
-		if(this->keychain.size() == 0){
+	if (this->variant_container.header.controller.any_encrypted) {
+		if (this->keychain.size() == 0) {
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
 			return false;
 		}
 
 		encryption_manager_type encryption_manager;
-		if(!encryption_manager.Decrypt(this->variant_container, this->keychain)){
+		if (!encryption_manager.Decrypt(this->variant_container, this->keychain)) {
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
 			return false;
 		}
 	}
 
 	// Internally decompress available data
-	if(!this->mImpl->codec_manager.Decompress(this->variant_container)){
+	if (!this->mImpl->codec_manager.Decompress(this->variant_container)) {
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return false;
 	}
@@ -239,78 +239,78 @@ bool VariantReader::NextBlock(){
 	return true;
 }
 
-bool VariantReader::NextBlockRaw(void){
-	if(this->CheckNextValid() == false) return false;
+bool VariantReader::NextBlockRaw(void) {
+	if (this->CheckNextValid() == false) return false;
 
 	// Reset and re-use
 	this->variant_container.clear();
 
-	if(!this->variant_container.ReadHeaderFooter(this->mImpl->basic_reader.stream_))
+	if (!this->variant_container.ReadHeaderFooter(this->mImpl->basic_reader.stream_))
 		return false;
 
-	if(!this->mImpl->codec_manager.zstd_codec.Decompress(this->variant_container.footer_support)){
+	if (!this->mImpl->codec_manager.zstd_codec.Decompress(this->variant_container.footer_support)) {
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 		return false;
 	}
 	this->variant_container.footer_support.data_uncompressed >> this->variant_container.footer;
 
 	// Attempts to read a YON block with the settings provided
-	if(!this->variant_container.read(this->mImpl->basic_reader.stream_, this->block_settings, this->global_header))
+	if (!this->variant_container.read(this->mImpl->basic_reader.stream_, this->block_settings, this->global_header))
 		return false;
 
 	// All passed
 	return true;
 }
 
-bool VariantReader::CheckNextValid(void){
+bool VariantReader::CheckNextValid(void) {
 	// If the stream is faulty then return
-	if(!this->mImpl->basic_reader.stream_.good()){
+	if (!this->mImpl->basic_reader.stream_.good()) {
 		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
 		return false;
 	}
 
 	// If the current position is the EOF then
 	// exit the function
-	if((uint64_t)this->mImpl->basic_reader.stream_.tellg() == this->global_footer.offset_end_of_data)
+	if ((uint64_t)this->mImpl->basic_reader.stream_.tellg() == this->global_footer.offset_end_of_data)
 		return false;
 
 	return true;
 }
 
-yon1_vb_t VariantReader::ReturnBlock(void){
+yon1_vb_t VariantReader::ReturnBlock(void) {
 	block_entry_type c;
 
-	if(this->CheckNextValid() == false)
+	if (this->CheckNextValid() == false)
 		return c;
 
-	if(!c.ReadHeaderFooter(this->mImpl->basic_reader.stream_))
+	if (!c.ReadHeaderFooter(this->mImpl->basic_reader.stream_))
 		return(c);
 
-	if(!this->mImpl->codec_manager.zstd_codec.Decompress(c.footer_support)){
+	if (!this->mImpl->codec_manager.zstd_codec.Decompress(c.footer_support)) {
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 	}
 	c.footer_support.data_uncompressed >> c.footer;
 
 	// Attempts to read a YON block with the settings provided
-	if(!c.read(this->mImpl->basic_reader.stream_, this->block_settings, this->global_header))
+	if (!c.read(this->mImpl->basic_reader.stream_, this->block_settings, this->global_header))
 		return(c);
 
 	// encryption manager ascertainment
-	if(c.header.controller.any_encrypted){
-		if(this->keychain.size() == 0){
+	if (c.header.controller.any_encrypted) {
+		if (this->keychain.size() == 0) {
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
 			return(c);
 		}
 
 		encryption_manager_type encryption_manager;
-		if(!encryption_manager.Decrypt(c, this->keychain)){
+		if (!encryption_manager.Decrypt(c, this->keychain)) {
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
 			return(c);
 		}
 	}
 
 	// Internally decompress available data
-	if(!this->mImpl->codec_manager.Decompress(c)){
+	if (!this->mImpl->codec_manager.Decompress(c)) {
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return(c);
 	}
@@ -318,16 +318,16 @@ yon1_vb_t VariantReader::ReturnBlock(void){
 	return(c);
 }
 
-bool VariantReader::GetBlock(const index_entry_type& index_entry){
+bool VariantReader::GetBlock(const index_entry_type& index_entry) {
 	// If the stream is not good then return.
-	if(!this->mImpl->basic_reader.stream_.good()){
+	if (!this->mImpl->basic_reader.stream_.good()) {
 		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
 		return false;
 	}
 
 	// Seek to target block id with the help of the linear index.
 	this->mImpl->basic_reader.stream_.seekg(index_entry.byte_offset);
-	if(this->mImpl->basic_reader.stream_.good() == false){
+	if (this->mImpl->basic_reader.stream_.good() == false) {
 		std::cerr << utility::timestamp("ERROR", "IO") << "Failed to seek to given offset using target index entry!" << std::endl;
 		return(false);
 	}
@@ -336,47 +336,47 @@ bool VariantReader::GetBlock(const index_entry_type& index_entry){
 	return(this->NextBlock());
 }
 
-bool VariantReader::SeekBlock(const uint32_t& block_id){
+bool VariantReader::SeekBlock(const uint32_t& block_id) {
 	const uint64_t offset = this->GetIndex()[block_id].byte_offset;
 	this->mImpl->basic_reader.stream_.seekg(offset);
-	if(this->mImpl->basic_reader.stream_.good() == false){
+	if (this->mImpl->basic_reader.stream_.good() == false) {
 		std::cerr << "failed to seek" << std::endl;
 		return false;
 	}
 	return true;
 }
 
-bool VariantReader::LoadKeychainFile(void){
+bool VariantReader::LoadKeychainFile(void) {
 	std::ifstream keychain_reader(settings.keychain_file, std::ios::binary | std::ios::in);
-	if(!keychain_reader.good()){
+	if (!keychain_reader.good()) {
 		std::cerr << tachyon::utility::timestamp("ERROR") <<  "Failed to open keychain: " << settings.keychain_file << "..." << std::endl;
 		return false;
 	}
 
 	keychain_reader >> this->keychain;
-	if(!keychain_reader.good()){
+	if (!keychain_reader.good()) {
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse keychain..." << std::endl;
 		return false;
 	}
 	return true;
 }
 
-uint64_t VariantReader::OutputVcfLinear(void){
-	if(this->gt_exp == nullptr)
+uint64_t VariantReader::OutputVcfLinear(void) {
+	if (this->gt_exp == nullptr)
 		this->gt_exp = new yon_gt_rcd[this->global_header.GetNumberSamples()];
 
 	yon_buffer_t buf(100000);
-	while(this->NextBlock()){
+	while (this->NextBlock()) {
 		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
 
-		if(this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
+		if (this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
 			this->occ_table.BuildTable(this->variant_container.gt_ppa);
 
-		for(uint32_t i = 0; i < vc.size(); ++i){
-			if(this->variant_filters.Filter(vc[i], i) == false)
+		for (uint32_t i = 0; i < vc.size(); ++i) {
+			if (this->variant_filters.Filter(vc[i], i) == false)
 				continue;
 
-			if(this->GetBlockSettings().annotate_extra){
+			if (this->GetBlockSettings().annotate_extra) {
 				vc[i].EvaluateOcc(this->occ_table);
 				vc[i].EvaluateOccSummary(true);
 
@@ -393,30 +393,30 @@ uint64_t VariantReader::OutputVcfLinear(void){
 	return 0;
 }
 
-uint64_t VariantReader::OutputVcfSearch(void){
-	if(this->gt_exp == nullptr)
+uint64_t VariantReader::OutputVcfSearch(void) {
+	if (this->gt_exp == nullptr)
 		this->gt_exp = new yon_gt_rcd[this->global_header.GetNumberSamples()];
 
 	// Filter functionality
 	filter_intervals_function filter_intervals = &self_type::FilterIntervals;
 	yon_buffer_t buf(100000);
 
-	for(uint32_t i = 0; i < this->mImpl->interval_container.GetBlockList().size(); ++i){
+	for (uint32_t i = 0; i < this->mImpl->interval_container.GetBlockList().size(); ++i) {
 		this->GetBlock(this->mImpl->interval_container.GetBlockList()[i]);
 
 		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
 
-		if(this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
+		if (this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
 			this->occ_table.BuildTable(this->variant_container.gt_ppa);
 
-		for(uint32_t i = 0; i < vc.size(); ++i){
-			if((this->*filter_intervals)(vc[i]) == false)
+		for (uint32_t i = 0; i < vc.size(); ++i) {
+			if ((this->*filter_intervals)(vc[i]) == false)
 				continue;
 
-			if(this->variant_filters.Filter(vc[i], i) == false)
+			if (this->variant_filters.Filter(vc[i], i) == false)
 				continue;
 
-			if(this->GetBlockSettings().annotate_extra){
+			if (this->GetBlockSettings().annotate_extra) {
 				vc[i].EvaluateOcc(this->occ_table);
 				vc[i].EvaluateOccSummary(true);
 
@@ -434,14 +434,14 @@ uint64_t VariantReader::OutputVcfSearch(void){
 	return 0;
 }
 
-uint64_t VariantReader::OutputYonLinear(void){
+uint64_t VariantReader::OutputYonLinear(void) {
 	VariantWriterInterface* writer = nullptr;
-	if(settings.output == "-" || settings.output.size() == 0)
+	if (settings.output == "-" || settings.output.size() == 0)
 		writer = new VariantWriterStream();
 	else
 		writer = new VariantWriterFile();
 
-	if(writer->open(settings.output) == false){
+	if (writer->open(settings.output) == false) {
 		std::cerr << "failed to open: " << settings.output << std::endl;
 		return false;
 	}
@@ -453,20 +453,20 @@ uint64_t VariantReader::OutputYonLinear(void){
 	writer->UpdateHeaderView(this->global_header, this->settings.GetSettingsString());
 	writer->WriteFileHeader(this->global_header);
 
-	if(this->gt_exp == nullptr)
+	if (this->gt_exp == nullptr)
 		this->gt_exp = new yon_gt_rcd[this->global_header.GetNumberSamples()];
 
-	while(this->NextBlock()){
+	while (this->NextBlock()) {
 		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
 
-		if(this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
+		if (this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
 			this->occ_table.BuildTable(this->variant_container.gt_ppa);
 
-		for(uint32_t i = 0; i < vc.size(); ++i){
-			if(this->variant_filters.Filter(vc[i], i) == false)
+		for (uint32_t i = 0; i < vc.size(); ++i) {
+			if (this->variant_filters.Filter(vc[i], i) == false)
 				continue;
 
-			if(this->GetBlockSettings().annotate_extra){
+			if (this->GetBlockSettings().annotate_extra) {
 				vc[i].EvaluateOcc(this->occ_table);
 				vc[i].EvaluateOccSummary(true);
 
@@ -474,7 +474,7 @@ uint64_t VariantReader::OutputYonLinear(void){
 				vc[i].AddGenotypeStatistics(this->global_header);
 				vc[i].AddGenotypeStatisticsOcc(this->global_header, this->occ_table.row_names);
 			}
-			if(vc[i].gt != nullptr) vc[i].gt->Expand();
+			if (vc[i].gt != nullptr) vc[i].gt->Expand();
 			*writer += vc[i];
 		}
 	}
@@ -485,14 +485,14 @@ uint64_t VariantReader::OutputYonLinear(void){
 	return 0;
 }
 
-uint64_t VariantReader::OutputYonSearch(void){
+uint64_t VariantReader::OutputYonSearch(void) {
 	VariantWriterInterface* writer = nullptr;
-	if(settings.output == "-" || settings.output.size() == 0)
+	if (settings.output == "-" || settings.output.size() == 0)
 		writer = new VariantWriterStream();
 	else
 		writer = new VariantWriterFile();
 
-	if(writer->open(settings.output) == false){
+	if (writer->open(settings.output) == false) {
 		std::cerr << "failed to open: " << settings.output << std::endl;
 		return false;
 	}
@@ -503,28 +503,28 @@ uint64_t VariantReader::OutputYonSearch(void){
 	writer->UpdateHeaderView(this->global_header, this->settings.GetSettingsString());
 	writer->WriteFileHeader(this->global_header);
 
-	if(this->gt_exp == nullptr)
+	if (this->gt_exp == nullptr)
 		this->gt_exp = new yon_gt_rcd[this->global_header.GetNumberSamples()];
 
 	// Filter functionality
 	filter_intervals_function filter_intervals = &self_type::FilterIntervals;
 
-	for(uint32_t i = 0; i < this->mImpl->interval_container.GetBlockList().size(); ++i){
+	for (uint32_t i = 0; i < this->mImpl->interval_container.GetBlockList().size(); ++i) {
 		this->GetBlock(this->mImpl->interval_container.GetBlockList()[i]);
 
 		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
 
-		if(this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
+		if (this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
 			this->occ_table.BuildTable(this->variant_container.gt_ppa);
 
-		for(uint32_t i = 0; i < vc.size(); ++i){
-			if((this->*filter_intervals)(vc[i]) == false)
+		for (uint32_t i = 0; i < vc.size(); ++i) {
+			if ((this->*filter_intervals)(vc[i]) == false)
 				continue;
 
-			if(this->variant_filters.Filter(vc[i], i) == false)
+			if (this->variant_filters.Filter(vc[i], i) == false)
 				continue;
 
-			if(this->GetBlockSettings().annotate_extra){
+			if (this->GetBlockSettings().annotate_extra) {
 				vc[i].EvaluateOcc(this->occ_table);
 				vc[i].EvaluateOccSummary(true);
 
@@ -533,7 +533,7 @@ uint64_t VariantReader::OutputYonSearch(void){
 				vc[i].AddGenotypeStatisticsOcc(this->global_header, this->occ_table.row_names);
 			}
 
-			if(vc[i].gt != nullptr) vc[i].gt->Expand();
+			if (vc[i].gt != nullptr) vc[i].gt->Expand();
 			*writer += vc[i];
 		}
 	}
@@ -544,20 +544,20 @@ uint64_t VariantReader::OutputYonSearch(void){
 	return 0;
 }
 
-uint64_t VariantReader::OutputRecords(void){
+uint64_t VariantReader::OutputRecords(void) {
 	this->UpdateHeaderView();
 	this->mImpl->interval_container.Build(this->global_header);
 
 	// Load encryption keychain if available.
-	if(this->settings.keychain_file.size())
+	if (this->settings.keychain_file.size())
 		this->LoadKeychainFile();
 
-	if(this->settings.annotate_genotypes)
+	if (this->settings.annotate_genotypes)
 		this->GetHeader().AddGenotypeAnnotationFields();
 
 	// Occ
-	if(this->settings.group_file.size()){
-		if(this->occ_table.ReadTable(this->settings.group_file, this->GetHeader(), '\t') == false){
+	if (this->settings.group_file.size()) {
+		if (this->occ_table.ReadTable(this->settings.group_file, this->GetHeader(), '\t') == false) {
 			return(0);
 		}
 
@@ -565,27 +565,27 @@ uint64_t VariantReader::OutputRecords(void){
 	}
 
 	// Any htslib
-	if(this->settings.use_htslib){
-		if(this->mImpl->interval_container.size()) return(this->OutputHtslibVcfSearch());
+	if (this->settings.use_htslib) {
+		if (this->mImpl->interval_container.size()) return(this->OutputHtslibVcfSearch());
 		else return(this->OutputHtslibVcfLinear());
 	}
 
 	// Tachyon
-	if(this->settings.output_type == 'y'){
-		if(this->mImpl->interval_container.size()) return(this->OutputYonSearch());
+	if (this->settings.output_type == 'y') {
+		if (this->mImpl->interval_container.size()) return(this->OutputYonSearch());
 		else return(this->OutputYonLinear());
 	}
 
 	// Vcf
-	if(this->GetBlockSettings().show_vcf_header)
+	if (this->GetBlockSettings().show_vcf_header)
 		this->global_header.PrintVcfHeader(std::cout);
 
-	if(this->mImpl->interval_container.size()) return(this->OutputVcfSearch());
+	if (this->mImpl->interval_container.size()) return(this->OutputVcfSearch());
 	else return(this->OutputVcfLinear());
 }
 
-uint64_t VariantReader::OutputHtslibVcfLinear(void){
-	if(this->gt_exp == nullptr)
+uint64_t VariantReader::OutputHtslibVcfLinear(void) {
+	if (this->gt_exp == nullptr)
 		this->gt_exp = new yon_gt_rcd[this->global_header.GetNumberSamples()];
 
 	// Open a htslib file handle for the target output
@@ -597,9 +597,9 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 
 	// Add extra htslib compression threads if desired.
 	int n_extra_threads = std::thread::hardware_concurrency();
-	if(n_extra_threads){
+	if (n_extra_threads) {
 		int ret = hts_set_threads(fp, n_extra_threads);
-		if(ret < 0){
+		if (ret < 0) {
 			std::cerr << "failed to open multiple handles" << std::endl;
 			return 0;
 		}
@@ -618,18 +618,18 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 	bcf1_t *rec = bcf_init1();
 
 	// Iterate over available blocks.
-	while(this->NextBlock()){
+	while (this->NextBlock()) {
 		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
 
-		if(this->GetBlockSettings().annotate_extra)
+		if (this->GetBlockSettings().annotate_extra)
 			this->occ_table.BuildTable(this->variant_container.gt_ppa);
 
 		// Iterate over available records in this block.
-		for(uint32_t i = 0; i < vc.size(); ++i){
-			if(this->variant_filters.Filter(vc[i], i) == false)
+		for (uint32_t i = 0; i < vc.size(); ++i) {
+			if (this->variant_filters.Filter(vc[i], i) == false)
 				continue;
 
-			if(this->GetBlockSettings().annotate_extra){
+			if (this->GetBlockSettings().annotate_extra) {
 				vc[i].EvaluateOcc(this->occ_table);
 				vc[i].EvaluateOccSummary(true);
 
@@ -644,7 +644,7 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 			vc[i].OutputHtslibVcfFilter(rec, hdr);
 
 
-			if ( bcf_write1(fp, hdr, rec) != 0 ){
+			if ( bcf_write1(fp, hdr, rec) != 0 ) {
 				std::cerr << "Failed to write record to " << this->settings.output;
 				exit(1);
 			}
@@ -667,8 +667,8 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 	return 0;
 }
 
-uint64_t VariantReader::OutputHtslibVcfSearch(void){
-	if(this->gt_exp == nullptr)
+uint64_t VariantReader::OutputHtslibVcfSearch(void) {
+	if (this->gt_exp == nullptr)
 		this->gt_exp = new yon_gt_rcd[this->global_header.GetNumberSamples()];
 
 	// Open a htslib file handle for the target output
@@ -679,9 +679,9 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 
 	// Add extra htslib compression threads if desired.
 	int n_extra_threads = std::thread::hardware_concurrency();
-	if(n_extra_threads){
+	if (n_extra_threads) {
 		int ret = hts_set_threads(fp, n_extra_threads);
-		if(ret < 0){
+		if (ret < 0) {
 			std::cerr << "failed to open multiple handles" << std::endl;
 			return 0;
 		}
@@ -703,18 +703,18 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 	filter_intervals_function filter_intervals = &self_type::FilterIntervals;
 
 	// Iterate over available blocks.
-	while(this->NextBlock()){
+	while (this->NextBlock()) {
 		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
 
 		// Iterate over available records in this block.
-		for(uint32_t i = 0; i < vc.size(); ++i){
-			if((this->*filter_intervals)(vc[i]) == false)
+		for (uint32_t i = 0; i < vc.size(); ++i) {
+			if ((this->*filter_intervals)(vc[i]) == false)
 				continue;
 
-			if(this->variant_filters.Filter(vc[i], i) == false)
+			if (this->variant_filters.Filter(vc[i], i) == false)
 				continue;
 
-			if(this->GetBlockSettings().annotate_extra){
+			if (this->GetBlockSettings().annotate_extra) {
 				vc[i].EvaluateSummary(true);
 				vc[i].AddGenotypeStatistics(this->global_header);
 			}
@@ -724,7 +724,7 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 			vc[i].OutputHtslibVcfFormat(rec, hdr, this->GetBlockSettings().display_static & YON_BLK_BV_GT, this->gt_exp);
 			vc[i].OutputHtslibVcfFilter(rec, hdr);
 
-			if ( bcf_write1(fp, hdr, rec) != 0 ){
+			if ( bcf_write1(fp, hdr, rec) != 0 ) {
 				std::cerr << "Failed to write record to " << this->settings.output;
 				exit(1);
 			}
@@ -747,13 +747,13 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 	return 0;
 }
 
-bool VariantReader::FilterIntervals(const yon1_vnt_t& entry) const{ return(this->mImpl->interval_container.FindOverlaps(entry).size()); }
+bool VariantReader::FilterIntervals(const yon1_vnt_t& entry) const { return(this->mImpl->interval_container.FindOverlaps(entry).size()); }
 
-bool VariantReader::AddIntervals(std::vector<std::string>& interval_strings){
+bool VariantReader::AddIntervals(std::vector<std::string>& interval_strings) {
 	return(this->mImpl->interval_container.ParseIntervals(interval_strings, this->global_header, this->index));
 }
 
-void VariantReader::UpdateHeaderView(void){
+void VariantReader::UpdateHeaderView(void) {
 	VcfExtra e;
 	e.key = "tachyon_viewVersion";
 	e.value = TACHYON_PROGRAM_NAME + "-" + VERSION + ";";
@@ -774,7 +774,7 @@ void VariantReader::UpdateHeaderView(void){
 }
 
 /*
-bool VariantReader::Benchmark(const uint32_t threads){
+bool VariantReader::Benchmark(const uint32_t threads) {
 	std::cerr << utility::timestamp("LOG") << "Starting benchmark with " << threads << " threads..." << std::endl;
 	this->BenchmarkWrapper(threads, &VariantSlavePerformance::LoadData);
 	this->mImpl->basic_reader.stream_.close();
@@ -787,8 +787,8 @@ bool VariantReader::Benchmark(const uint32_t threads){
 	return(true);
 }
 
-bool VariantReader::BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(yon1_vb_t*&)){
-	if(!this->open(settings.input)){
+bool VariantReader::BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(yon1_vb_t*&)) {
+	if (!this->open(settings.input)) {
 		std::cerr << "failed to open" << std::endl;
 		return 1;
 	}
@@ -805,7 +805,7 @@ bool VariantReader::BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePe
 	yon_consumer_vblock<VariantSlavePerformance>* csm = new yon_consumer_vblock<VariantSlavePerformance>[n_threads];
 	VariantSlavePerformance* slave = new VariantSlavePerformance[n_threads];
 
-	for(int i = 0; i < n_threads; ++i){
+	for (int i = 0; i < n_threads; ++i) {
 		csm[i].thread_id      = i;
 		csm[i].data_available = &prd.data_available;
 		csm[i].data_pool      = &prd.data_pool;
@@ -817,12 +817,12 @@ bool VariantReader::BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePe
 		csm[i].Start(func, slave[i]);
 	}
 	// Join consumer and producer threads.
-	for(uint32_t i = 0; i < n_threads; ++i) csm[i].thread_.join();
+	for (uint32_t i = 0; i < n_threads; ++i) csm[i].thread_.join();
 
 	prd.all_finished = true;
 	prd.thread_.join();
 
-	for(uint32_t i = 1; i < n_threads; ++i) slave[0] += slave[i];
+	for (uint32_t i = 1; i < n_threads; ++i) slave[0] += slave[i];
 
 	delete [] slave;
 	delete [] csm;
@@ -833,7 +833,7 @@ bool VariantReader::BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePe
 }
 */
 
-bool VariantReader::Stats(void){
+bool VariantReader::Stats(void) {
 	const uint32_t n_threads = std::thread::hardware_concurrency();
 	//const uint32_t n_threads = 1;
 	yon_producer_vblock<VariantReader> prd(n_threads);
@@ -844,7 +844,7 @@ bool VariantReader::Stats(void){
 
 	VariantSlaveTsTv* slave_test = new VariantSlaveTsTv[n_threads];
 
- 	for(int i = 0; i < n_threads; ++i){
+ 	for (int i = 0; i < n_threads; ++i) {
 		csm[i].thread_id      = i;
 		csm[i].data_available = &prd.data_available;
 		csm[i].data_pool      = &prd.data_pool;
@@ -858,13 +858,13 @@ bool VariantReader::Stats(void){
 		csm[i].Start(&VariantSlaveTsTv::GatherGenotypeStatistics, slave_test[i]);
 	}
 	// Join consumer and producer threads.
-	for(uint32_t i = 0; i < n_threads; ++i) csm[i].thread_.join();
+	for (uint32_t i = 0; i < n_threads; ++i) csm[i].thread_.join();
 
 	prd.all_finished = true;
 	prd.thread_.join();
 
 	yon_stats_tstv s(this->GetHeader().GetNumberSamples());
-	for(uint32_t i = 0; i < n_threads; ++i) s += slave_test[i].s;
+	for (uint32_t i = 0; i < n_threads; ++i) s += slave_test[i].s;
 
 	delete [] slave_test;
 	delete [] csm;
@@ -879,20 +879,20 @@ bool VariantReader::Stats(void){
 	return true;
 }
 
-bcf_hdr_t* VariantReader::VariantReaderImpl::ConvertVcfHeaderLiterals(const yon_vnt_hdr_t& hdr, const bool add_format){
+bcf_hdr_t* VariantReader::VariantReaderImpl::ConvertVcfHeaderLiterals(const yon_vnt_hdr_t& hdr, const bool add_format) {
 	std::string internal = hdr.literals_;
 	internal += "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
-	if(hdr.samples_.size() && add_format){
+	if (hdr.samples_.size() && add_format) {
 		internal += "\tFORMAT\t";
 		internal += hdr.samples_[0];
-		for(size_t i = 1; i < hdr.samples_.size(); ++i)
+		for (size_t i = 1; i < hdr.samples_.size(); ++i)
 			internal += "\t" + hdr.samples_[i];
 	}
 	internal += "\n";
 
 	bcf_hdr_t* bcf_hdr = bcf_hdr_init("r");
 	int ret = bcf_hdr_parse(bcf_hdr, (char*)internal.c_str());
-	if(ret != 0){
+	if (ret != 0) {
 		std::cerr << "failed to get bcf header from literals" << std::endl;
 		bcf_hdr_destroy(bcf_hdr);
 		return(nullptr);
@@ -901,20 +901,20 @@ bcf_hdr_t* VariantReader::VariantReaderImpl::ConvertVcfHeaderLiterals(const yon_
 	return(bcf_hdr);
 }
 
-bcf_hdr_t* VariantReader::VariantReaderImpl::ConvertVcfHeader(const yon_vnt_hdr_t& hdr, const bool add_format){
+bcf_hdr_t* VariantReader::VariantReaderImpl::ConvertVcfHeader(const yon_vnt_hdr_t& hdr, const bool add_format) {
 	std::string internal = hdr.ToString(true);
 	internal += "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
-	if(hdr.samples_.size() && add_format){
+	if (hdr.samples_.size() && add_format) {
 		internal += "\tFORMAT\t";
 		internal += hdr.samples_[0];
-		for(size_t i = 1; i < hdr.samples_.size(); ++i)
+		for (size_t i = 1; i < hdr.samples_.size(); ++i)
 			internal += "\t" + hdr.samples_[i];
 	}
 	internal += "\n";
 
 	bcf_hdr_t* bcf_hdr = bcf_hdr_init("r");
 	int ret = bcf_hdr_parse(bcf_hdr, (char*)internal.c_str());
-	if(ret != 0){
+	if (ret != 0) {
 		std::cerr << "failed to get bcf header from literals" << std::endl;
 		bcf_hdr_destroy(bcf_hdr);
 		return(nullptr);
